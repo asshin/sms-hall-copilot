@@ -139,13 +139,32 @@
   </section>
 
   <section id="tab-cfg" class="layout hidden">
-    <div class="card" style="grid-column: 1 / -1">
-      <h2>自然语言 → 隐性指令草案</h2>
+    <div class="card">
+      <h2>需求</h2>
       <textarea id="req">预付费用户发送 STOP 暂停本地和漫游数据，需要 Y 确认。对接 CRM 暂停接口。</textarea>
       <div class="row" style="margin-top:8px">
         <button class="act" id="draftBtn">生成草案</button>
+        <span id="verdictPill" class="pill">未跑</span>
       </div>
-      <pre id="draftOut" style="margin-top:12px"></pre>
+      <p style="color:var(--muted);margin:10px 0 0;font-size:12px">Harness：检索 → 提案 → 冲突改派 → 策略检查 → 结论。不会写入 catalog。</p>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h2>结论</h2>
+        <div class="kv" id="cfgKv"></div>
+      </div>
+      <div class="card">
+        <h2>检查项</h2>
+        <pre id="cfgChecks"></pre>
+      </div>
+      <div class="card">
+        <h2>步骤</h2>
+        <pre id="cfgSteps"></pre>
+      </div>
+      <div class="card">
+        <h2>草案 JSON</h2>
+        <pre id="draftOut"></pre>
+      </div>
     </div>
   </section>
 
@@ -220,11 +239,31 @@
       $("evalOut").className = "pill " + (m.accuracy >= 0.9 ? "ok" : "bad");
     };
     $("draftBtn").onclick = async () => {
+      $("verdictPill").textContent = "running…";
       const data = await (await fetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requirement: $("req").value }),
       })).json();
+      const v = data.verdict || "—";
+      $("verdictPill").textContent = v;
+      $("verdictPill").className = "pill " + (v === "ready_to_copy" ? "ok" : "bad");
+      const d = data.draft || {};
+      const rows = [
+        ["verdict", v],
+        ["reason", data.verdict_reason || "—"],
+        ["apply", String(data.apply)],
+        ["source", data.propose_source || "—"],
+        ["intent", d.intent || "—"],
+        ["requested", d.requested_code || "—"],
+        ["assigned", d.command_code || "—"],
+        ["confirm", String(d.confirm)],
+        ["plans", (d.plans || []).join(",") || "—"],
+        ["unknowns", (data.unknowns || []).join(", ") || "—"],
+      ];
+      $("cfgKv").innerHTML = rows.map(([k, val]) => `<span>${k}</span><div>${val}</div>`).join("");
+      $("cfgChecks").textContent = (data.checks || []).map(c => `${c.ok ? "PASS" : "FAIL"}  ${c.id}  ${c.detail}`).join("\n");
+      $("cfgSteps").textContent = (data.steps || []).map(s => `${s.id}  ok=${s.ok}  ${JSON.stringify(s)}`).join("\n");
       $("draftOut").textContent = JSON.stringify(data, null, 2);
     };
     document.querySelectorAll(".tabs button").forEach((btn) => {
