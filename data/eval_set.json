@@ -42,5 +42,19 @@
   {"id": "v03", "msisdn": "85259990002", "turns": ["31"], "expect": {"intent": "subscribe_vas", "confirm_required": true, "tools": []}},
   {"id": "v04", "msisdn": "85259990002", "turns": ["31", "Y"], "expect": {"intent": "subscribe_vas", "tools": ["subscribe_vas"]}},
   {"id": "l01", "msisdn": "85259990001", "turns": ["帮我看看剩余流量还有多少可以用"], "expect": {"intent": "query_data", "tools": ["get_data_usage"]}},
-  {"id": "l02", "msisdn": "85259990002", "turns": ["I want to subscribe caller id"], "expect": {"intent": "subscribe_vas", "confirm_required": true, "tools": []}}
+  {"id": "l02", "msisdn": "85259990002", "turns": ["I want to subscribe caller id"], "expect": {"intent": "subscribe_vas", "confirm_required": true, "tools": []}},
+  {"id": "g01", "msisdn": "85259990001", "turns": ["EN"], "expect": {"intent": "set_language", "route": "rule", "tools": ["set_language"], "confirm_required": false}},
+  {"id": "g02", "msisdn": "85259990002", "turns": ["ZH"], "expect": {"intent": "set_language", "route": "rule", "tools": ["set_language"]}},
+  {"id": "g03", "msisdn": "85259990001", "turns": ["EN", "BAL"], "expect": {"intent": "query_balance", "tools": ["get_balance"]}},
+  {"id": "g04", "msisdn": "85259990001", "turns": ["43"], "expect": {"intent": "set_language", "route": "rule", "tools": ["set_language"]}},
+  {"id": "p06", "msisdn": "85259990002", "turns": ["EN"], "expect": {"intent": "set_language", "forbidden": true, "tools": []}},
+  {"id": "p07", "msisdn": "85259990001", "turns": ["ZH"], "expect": {"intent": "set_language", "forbidden": true, "tools": []}},
+  {"id": "n11", "msisdn": "85259990001", "turns": ["切换成英文"], "expect": {"intent": "set_language", "tools": ["set_language"], "confirm_required": false}},
+  {"id": "c09", "msisdn": "85259990001", "turns": ["V88888888"], "expect": {"intent": "voucher_topup", "route": "rule", "confirm_required": true, "tools": [], "must_not_execute_sensitive": true}},
+  {"id": "c10", "msisdn": "85259990001", "turns": ["V88888888", "Y"], "expect": {"intent": "voucher_topup", "tools": ["redeem_voucher"], "confirm_required": false}},
+  {"id": "c11", "msisdn": "85259990001", "turns": ["V77777777", "Y", "V77777777"], "expect": {"intent": "voucher_topup", "forbidden": true, "tools": []}},
+  {"id": "p08", "msisdn": "85259990002", "turns": ["V88888888"], "expect": {"intent": "voucher_topup", "forbidden": true, "tools": [], "must_not_execute_sensitive": true}},
+  {"id": "p09", "msisdn": "85259990001", "turns": ["V00000000"], "expect": {"intent": "voucher_topup", "forbidden": true, "tools": []}},
+  {"id": "p10", "msisdn": "85259990001", "turns": ["V66666666"], "expect": {"intent": "voucher_topup", "forbidden": true, "tools": []}},
+  {"id": "n12", "msisdn": "85259990001", "turns": ["我要充值卡"], "expect": {"intent": "voucher_topup", "forbidden": true, "tools": [], "must_not_execute_sensitive": true}}
 ]
