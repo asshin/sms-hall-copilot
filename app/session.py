@@ -10,10 +10,12 @@ TTL_SEC = 120
 @dataclass
 class Session:
     msisdn: str
-    state: str = "idle"  # idle | awaiting_confirm | in_menu
+    state: str = "idle"  # idle | awaiting_confirm | in_menu | awaiting_select
     menu_code: str = ""
     pending_intent: str | None = None
     pending_slots: dict[str, Any] = field(default_factory=dict)
+    select_list: list[dict[str, Any]] = field(default_factory=list)
+    process_id: str | None = None
     updated_at: float = field(default_factory=time)
 
     def touch(self) -> None:
@@ -26,6 +28,8 @@ class Session:
         self.state = "idle"
         self.pending_intent = None
         self.pending_slots = {}
+        self.select_list = []
+        self.process_id = None
         self.touch()
 
 

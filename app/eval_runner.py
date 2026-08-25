@@ -17,6 +17,7 @@ SENSITIVE_TOOLS = {
     "unsubscribe_vas",
     "topup",
     "redeem_voucher",
+    "subscribe_offer",
 }
 
 

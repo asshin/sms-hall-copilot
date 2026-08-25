@@ -1,0 +1,12 @@
+{
+  "offers": [
+    {"id": "OFF_50G_LOCAL", "index": 1, "zh": "50G本地流量", "en": "50GB local data", "fee": 88, "aliases": ["50G", "五十G", "本地流量"]},
+    {"id": "OFF_10G_LOCAL", "index": 2, "zh": "10G本地流量", "en": "10GB local data", "fee": 38, "aliases": ["10G"]},
+    {"id": "OFF_VOICE", "index": 3, "zh": "无限语音", "en": "Unlimited voice", "fee": 58, "aliases": ["语音", "voice"]},
+    {"id": "OFF_WEEKEND", "index": 4, "zh": "周末流量包", "en": "Weekend data pack", "fee": 28, "aliases": ["周末"]},
+    {"id": "OFF_5G", "index": 5, "zh": "5G升级包", "en": "5G upgrade", "fee": 48, "aliases": ["5G", "升级"]},
+    {"id": "OFF_ROAM", "index": 6, "zh": "国际漫游日包", "en": "Roaming day pass", "fee": 88, "aliases": ["漫游", "roaming"]},
+    {"id": "OFF_IDLE", "index": 7, "zh": "闲时流量包", "en": "Off-peak data", "fee": 18, "aliases": ["闲时"]},
+    {"id": "OFF_SMS", "index": 8, "zh": "短信包100条", "en": "100 SMS pack", "fee": 8, "aliases": ["短信", "sms"]}
+  ]
+}

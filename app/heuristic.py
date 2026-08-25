@@ -8,6 +8,7 @@ from app.rag import search
 
 _PAUSE = ("暂停", "停掉", "pause", "stop data", "停数据", "停流量")
 _RULES: list[tuple[tuple[str, ...], str, dict]] = [
+    (("可订购资费", "可订购", "订购资费", "资费列表", "流量包"), "browse_offers", {}),
     (("余额", "话费", "balance", "credit"), "query_balance", {}),
     (("流量", "data remaining", "remaining data", "还剩多少流量", "剩余流量"), "query_data", {}),
     (("账单", "bill"), "query_bill", {}),

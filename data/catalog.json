@@ -280,6 +280,16 @@
       "slots": {
         "game_id": "G001"
       }
+    },
+    {
+      "code": "OFFER",
+      "intent": "browse_offers",
+      "hidden": true,
+      "confirm": false,
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ]
     }
   ],
   "vas": {

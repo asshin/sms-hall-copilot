@@ -27,6 +27,9 @@ def forbid_text(lang: str, reason: str) -> str:
         "invalid_pin": ("充值卡无效。", "Invalid voucher."),
         "voucher_used": ("该充值卡已使用。", "Voucher already used."),
         "voucher_prepaid_only": ("后付费不支持充值卡。", "Voucher top-up is prepaid only."),
+        "offer_already_on": ("该资费已订购。", "Offer already subscribed."),
+        "unknown_offer": ("资费不存在。", "Unknown offer."),
+        "need_offer": ("请先选择要订购的资费。", "Pick an offer first."),
     }
     zh, en = mapping.get(reason, ("暂不能办理。", "Not eligible."))
     return t(lang, zh, en)
@@ -62,6 +65,14 @@ def confirm_text(lang: str, intent: str, slots: dict[str, Any]) -> str:
     if intent == "voucher_topup":
         amount = slots.get("amount", "")
         return t(lang, f"将使用充值卡充值 {amount} HKD，回复 Y 确认，N 取消。", f"Redeem voucher for {amount} HKD. Reply Y to confirm, N to cancel.")
+    if intent == "subscribe_offer":
+        name = slots.get("offer_name_zh") if lang == "zh" else slots.get("offer_name_en")
+        fee = slots.get("fee", "")
+        return t(
+            lang,
+            f"将订购{name}，月费{fee}，回复 Y 确认，N 取消。",
+            f"Subscribe {name}, monthly {fee}. Reply Y to confirm, N to cancel.",
+        )
     return t(lang, "回复 Y 确认，N 取消。", "Reply Y to confirm, N to cancel.")
 
 
@@ -99,6 +110,9 @@ def result_text(lang: str, intent: str, payload: dict[str, Any], slots: dict[str
             f"充值卡已入账 {payload['amount']} {payload['currency']}，余额 {payload['balance']}。",
             f"Voucher {payload['amount']} {payload['currency']} added. Balance {payload['balance']}.",
         )
+    if intent == "subscribe_offer":
+        name = payload.get("name_zh") if lang == "zh" else payload.get("name_en")
+        return t(lang, f"已订购{name}，月费{payload.get('fee')}。", f"{name} subscribed, monthly {payload.get('fee')}.")
     from app.intents_registry import get_intent
 
     spec = get_intent(intent)
@@ -125,6 +139,28 @@ def out_of_scope(lang: str) -> str:
         lang,
         "暂无法处理该问题。请发 1880 查看菜单，或发 BAL/DATA 查询。",
         "Can't handle that. Send 1880 for menu, or BAL/DATA to query.",
+    )
+
+
+def offer_list_text(lang: str, items: list[dict[str, Any]]) -> str:
+    lines = []
+    for item in items:
+        name = item["zh"] if lang == "zh" else item["en"]
+        lines.append(f"{item['index']} {name}")
+    body = "\n".join(lines)
+    return t(
+        lang,
+        f"可订购资费：\n{body}\n回复编号或名称办理，0取消。",
+        f"Offers:\n{body}\nReply with number or name. 0 to cancel.",
+    )
+
+
+def need_select_text(lang: str, items: list[dict[str, Any]]) -> str:
+    n = len(items)
+    return t(
+        lang,
+        f"未识别该选择。请回复 1-{n} 的编号，或资费名称，0取消。",
+        f"Could not match that. Reply 1-{n}, a tariff name, or 0 to cancel.",
     )
 
 

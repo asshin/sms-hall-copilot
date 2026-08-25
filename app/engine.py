@@ -38,6 +38,11 @@ def handle_mo(msisdn: str, text: str) -> TurnResult:
             return _finish(msisdn, replies.cancelled(lang), Trace(route="confirm", intent="cancel"), started)
         return _finish(msisdn, replies.need_yn(lang), Trace(route="confirm", intent=sess.pending_intent or "confirm"), started)
 
+    if sess.state == "awaiting_select":
+        from app.flow import handle_offer_select
+
+        return handle_offer_select(user, text, started)
+
     rule = matcher.match_rule(text, user)
     if rule:
         rule.slots["matched_code"] = matcher.normalize(text)
@@ -91,6 +96,11 @@ def _dispatch(
             fallback_reason=fallback,
         )
         return _finish(msisdn, text, trace, started, usage)
+
+    if plan.intent == "browse_offers":
+        from app.flow import start_offer_flow
+
+        return start_offer_flow(user, started, plan.source)
 
     if plan.intent == "out_of_scope":
         trace = Trace(route=plan.source, intent="out_of_scope", rag_hits=list(rag_hits)[:2], fallback_reason=fallback)

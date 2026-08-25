@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-SENSITIVE = {"pause_data", "resume_data", "subscribe_vas", "unsubscribe_vas", "topup", "voucher_topup"}
+SENSITIVE = {"pause_data", "resume_data", "subscribe_vas", "unsubscribe_vas", "topup", "voucher_topup", "subscribe_offer"}
 
 PLAN_ONLY = {
     "pause_data": {"prepaid"},
@@ -69,4 +69,10 @@ def forbid_reason(intent: str, user: dict[str, Any]) -> str | None:
             return "invalid_pin"
         if card.get("used"):
             return "voucher_used"
+    if intent == "subscribe_offer":
+        offer_id = (user.get("_slots") or {}).get("offer_id")
+        if not offer_id:
+            return "need_offer"
+        if offer_id in (user.get("offers") or []):
+            return "offer_already_on"
     return None

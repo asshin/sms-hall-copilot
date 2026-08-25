@@ -56,5 +56,12 @@
   {"id": "p08", "msisdn": "85259990002", "turns": ["V88888888"], "expect": {"intent": "voucher_topup", "forbidden": true, "tools": [], "must_not_execute_sensitive": true}},
   {"id": "p09", "msisdn": "85259990001", "turns": ["V00000000"], "expect": {"intent": "voucher_topup", "forbidden": true, "tools": []}},
   {"id": "p10", "msisdn": "85259990001", "turns": ["V66666666"], "expect": {"intent": "voucher_topup", "forbidden": true, "tools": []}},
-  {"id": "n12", "msisdn": "85259990001", "turns": ["我要充值卡"], "expect": {"intent": "voucher_topup", "forbidden": true, "tools": [], "must_not_execute_sensitive": true}}
+  {"id": "n12", "msisdn": "85259990001", "turns": ["我要充值卡"], "expect": {"intent": "voucher_topup", "forbidden": true, "tools": [], "must_not_execute_sensitive": true}},
+  {"id": "o01", "msisdn": "85259990001", "turns": ["OFFER"], "expect": {"intent": "browse_offers", "route": "rule", "tools": ["query_language", "query_offerable_offers"], "confirm_required": false}},
+  {"id": "o02", "msisdn": "85259990001", "turns": ["OFFER", "1"], "expect": {"intent": "subscribe_offer", "confirm_required": true, "tools": [], "must_not_execute_sensitive": true}},
+  {"id": "o03", "msisdn": "85259990001", "turns": ["OFFER", "1", "Y"], "expect": {"intent": "subscribe_offer", "tools": ["subscribe_offer"], "confirm_required": false}},
+  {"id": "o04", "msisdn": "85259990001", "turns": ["OFFER", "第一个", "Y"], "expect": {"intent": "subscribe_offer", "tools": ["subscribe_offer"]}},
+  {"id": "o05", "msisdn": "85259990001", "turns": ["OFFER", "50G本地流程", "Y"], "expect": {"intent": "subscribe_offer", "tools": ["subscribe_offer"]}},
+  {"id": "o06", "msisdn": "85259990001", "turns": ["OFFER", "天气"], "expect": {"intent": "need_select", "tools": [], "must_not_execute_sensitive": true}},
+  {"id": "n13", "msisdn": "85259990001", "turns": ["我想看看可订购资费"], "expect": {"intent": "browse_offers", "tools": ["query_language", "query_offerable_offers"]}}
 ]

@@ -22,6 +22,9 @@ def reset_runtime() -> None:
     global _RUNTIME, _VOUCHERS
     _RUNTIME = None
     _VOUCHERS = None
+    from app.boss import reset_offers_cache
+
+    reset_offers_cache()
 
 
 def _vouchers() -> dict[str, dict[str, Any]]:
@@ -122,6 +125,12 @@ def redeem_voucher(msisdn: str, pin: str | None = None) -> dict[str, Any]:
     return {"ok": True, "balance": u["balance"], "amount": amount, "currency": "HKD"}
 
 
+def _subscribe_offer(msisdn: str, offer_id: str | None = None) -> dict[str, Any]:
+    from app.boss import subscribe_offer
+
+    return subscribe_offer(msisdn, offer_id)
+
+
 TOOL_MAP = {
     "get_balance": lambda msisdn, **_: get_balance(msisdn),
     "get_data_usage": lambda msisdn, **_: get_data_usage(msisdn),
@@ -134,6 +143,7 @@ TOOL_MAP = {
     "topup": lambda msisdn, **kw: topup(msisdn, float(kw["amount"])),
     "set_language": lambda msisdn, **kw: set_language(msisdn, kw.get("lang")),
     "redeem_voucher": lambda msisdn, **kw: redeem_voucher(msisdn, kw.get("pin")),
+    "subscribe_offer": lambda msisdn, **kw: _subscribe_offer(msisdn, kw.get("offer_id")),
 }
 
 INTENT_TOOL = {
@@ -148,6 +158,7 @@ INTENT_TOOL = {
     "topup": "topup",
     "set_language": "set_language",
     "voucher_topup": "redeem_voucher",
+    "subscribe_offer": "subscribe_offer",
 }
 
 
