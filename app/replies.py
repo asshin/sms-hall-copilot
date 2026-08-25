@@ -21,6 +21,12 @@ def forbid_text(lang: str, reason: str) -> str:
         "not_paused": ("数据服务目前是开通状态。", "Data is not paused."),
         "vas_already_on": ("该增值业务已开通。", "VAS already active."),
         "vas_not_on": ("该增值业务未开通。", "VAS is not active."),
+        "already_lang": ("当前已是该语言。", "Already using this language."),
+        "need_lang": ("请回复 EN 切换英文，或 ZH 切换中文。", "Send EN for English, or ZH for Chinese."),
+        "need_pin": ("请发送 V 加 8 位卡密，例如 V88888888。", "Send V plus 8-digit PIN, e.g. V88888888."),
+        "invalid_pin": ("充值卡无效。", "Invalid voucher."),
+        "voucher_used": ("该充值卡已使用。", "Voucher already used."),
+        "voucher_prepaid_only": ("后付费不支持充值卡。", "Voucher top-up is prepaid only."),
     }
     zh, en = mapping.get(reason, ("暂不能办理。", "Not eligible."))
     return t(lang, zh, en)
@@ -37,6 +43,11 @@ def confirm_text(lang: str, intent: str, slots: dict[str, Any]) -> str:
     if intent == "unsubscribe_vas":
         name = VAS_NAME(slots.get("vas_code", "caller_id"), lang)
         return t(lang, f"退订{name}，回复 Y 确认，N 取消。", f"Unsubscribe {name}. Reply Y to confirm, N to cancel.")
+    if intent == "topup":
+        return t(lang, f"将充值 {slots.get('amount')} HKD，回复 Y 确认，N 取消。", f"Top up {slots.get('amount')} HKD. Reply Y to confirm, N to cancel.")
+    if intent == "voucher_topup":
+        amount = slots.get("amount", "")
+        return t(lang, f"将使用充值卡充值 {amount} HKD，回复 Y 确认，N 取消。", f"Redeem voucher for {amount} HKD. Reply Y to confirm, N to cancel.")
     return t(lang, "回复 Y 确认，N 取消。", "Reply Y to confirm, N to cancel.")
 
 
@@ -65,6 +76,15 @@ def result_text(lang: str, intent: str, payload: dict[str, Any], slots: dict[str
         return t(lang, f"已退订{name}。", f"{name} unsubscribed.")
     if intent == "topup":
         return t(lang, f"充值成功，余额 {payload['balance']}。", f"Top up ok. Balance {payload['balance']}.")
+    if intent == "set_language":
+        new_lang = payload.get("lang") or lang
+        return t(new_lang, "已切换为中文。", "Language set to English.")
+    if intent == "voucher_topup":
+        return t(
+            lang,
+            f"充值卡已入账 {payload['amount']} {payload['currency']}，余额 {payload['balance']}。",
+            f"Voucher {payload['amount']} {payload['currency']} added. Balance {payload['balance']}.",
+        )
     return t(lang, "办理完成。", "Done.")
 
 

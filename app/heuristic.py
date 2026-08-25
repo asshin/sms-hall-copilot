@@ -17,6 +17,9 @@ _RULES: list[tuple[tuple[str, ...], str, dict]] = [
     (("来电显示", "caller id", "callerid"), "subscribe_vas", {"vas_code": "caller_id"}),
     (("呼叫等待", "call waiting"), "subscribe_vas", {"vas_code": "call_waiting"}),
     (("退订来电", "关掉来电", "cidoff"), "unsubscribe_vas", {"vas_code": "caller_id"}),
+    (("英文", "english", "in english", "换成英文", "切到英文", "切换成英文"), "set_language", {"lang": "en"}),
+    (("中文", "chinese", "in chinese", "换成中文", "切到中文", "切换成中文"), "set_language", {"lang": "zh"}),
+    (("充值卡", "卡密", "voucher", "redeem card"), "voucher_topup", {}),
 ]
 
 _OOS = ("天气", "编一个", "随便编", "隔壁", "ignore previous", "忽略以上")

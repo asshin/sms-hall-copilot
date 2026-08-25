@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
 from copy import deepcopy
 from typing import Any
 
 from app.catalog import get_user, load_catalog, load_users
+from app.config import DATA_DIR
 
 _RUNTIME: dict[str, dict[str, Any]] | None = None
+_VOUCHERS: dict[str, dict[str, Any]] | None = None
 
 
 def _users() -> dict[str, dict[str, Any]]:
@@ -16,8 +19,21 @@ def _users() -> dict[str, dict[str, Any]]:
 
 
 def reset_runtime() -> None:
-    global _RUNTIME
+    global _RUNTIME, _VOUCHERS
     _RUNTIME = None
+    _VOUCHERS = None
+
+
+def _vouchers() -> dict[str, dict[str, Any]]:
+    global _VOUCHERS
+    if _VOUCHERS is None:
+        raw = json.loads((DATA_DIR / "vouchers.json").read_text(encoding="utf-8"))
+        _VOUCHERS = {k: deepcopy(v) for k, v in raw.items()}
+    return _VOUCHERS
+
+
+def inspect_voucher(pin: str) -> dict[str, Any] | None:
+    return _vouchers().get(pin)
 
 
 def snapshot(msisdn: str) -> dict[str, Any] | None:
@@ -85,6 +101,27 @@ def topup(msisdn: str, amount: float) -> dict[str, Any]:
     return {"ok": True, "balance": u["balance"]}
 
 
+def set_language(msisdn: str, lang: str | None = None) -> dict[str, Any]:
+    if lang not in {"zh", "en"}:
+        return {"ok": False, "reason": "need_lang"}
+    u = _users()[msisdn]
+    u["lang"] = lang
+    return {"ok": True, "lang": lang}
+
+
+def redeem_voucher(msisdn: str, pin: str | None = None) -> dict[str, Any]:
+    card = inspect_voucher(pin or "")
+    if not card:
+        return {"ok": False, "reason": "invalid_pin"}
+    if card.get("used"):
+        return {"ok": False, "reason": "voucher_used"}
+    u = _users()[msisdn]
+    amount = float(card["amount"])
+    u["balance"] = round(float(u.get("balance") or 0) + amount, 2)
+    card["used"] = True
+    return {"ok": True, "balance": u["balance"], "amount": amount, "currency": "HKD"}
+
+
 TOOL_MAP = {
     "get_balance": lambda msisdn, **_: get_balance(msisdn),
     "get_data_usage": lambda msisdn, **_: get_data_usage(msisdn),
@@ -95,6 +132,8 @@ TOOL_MAP = {
     "subscribe_vas": lambda msisdn, **kw: subscribe_vas(msisdn, kw.get("vas_code", "caller_id")),
     "unsubscribe_vas": lambda msisdn, **kw: unsubscribe_vas(msisdn, kw.get("vas_code", "caller_id")),
     "topup": lambda msisdn, **kw: topup(msisdn, float(kw["amount"])),
+    "set_language": lambda msisdn, **kw: set_language(msisdn, kw.get("lang")),
+    "redeem_voucher": lambda msisdn, **kw: redeem_voucher(msisdn, kw.get("pin")),
 }
 
 INTENT_TOOL = {
@@ -107,6 +146,8 @@ INTENT_TOOL = {
     "subscribe_vas": "subscribe_vas",
     "unsubscribe_vas": "unsubscribe_vas",
     "topup": "topup",
+    "set_language": "set_language",
+    "voucher_topup": "redeem_voucher",
 }
 
 

@@ -1,0 +1,5 @@
+{
+  "88888888": { "amount": 50, "used": false, "note": "demo unused 50 HKD" },
+  "77777777": { "amount": 100, "used": false, "note": "demo unused 100 HKD" },
+  "66666666": { "amount": 30, "used": true, "note": "demo already redeemed" }
+}

@@ -41,6 +41,22 @@ def match_rule(text: str, user: dict[str, Any]) -> IntentPlan | None:
             source="rule",
         )
 
+    voucher = re.fullmatch(r"V(\d{8})", code)
+    if voucher:
+        pin = voucher.group(1)
+        from app.tools import inspect_voucher
+
+        info = inspect_voucher(pin)
+        slots: dict[str, Any] = {"pin": pin}
+        if info and not info.get("used"):
+            slots["amount"] = info["amount"]
+        return IntentPlan(
+            intent="voucher_topup",
+            slots=slots,
+            confirm=True,
+            source="rule",
+        )
+
     menus = menu_by_code()
     if code in menus or code == "0":
         return IntentPlan(

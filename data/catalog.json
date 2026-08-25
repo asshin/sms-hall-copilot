@@ -168,6 +168,29 @@
       "hidden": false,
       "confirm": false,
       "plans": ["prepaid", "postpaid"]
+    },
+    {
+      "code": "EN",
+      "intent": "set_language",
+      "hidden": true,
+      "confirm": false,
+      "plans": ["prepaid", "postpaid"],
+      "slots": { "lang": "en" }
+    },
+    {
+      "code": "ZH",
+      "intent": "set_language",
+      "hidden": true,
+      "confirm": false,
+      "plans": ["prepaid", "postpaid"],
+      "slots": { "lang": "zh" }
+    },
+    {
+      "code": "CARD",
+      "intent": "voucher_topup",
+      "hidden": true,
+      "confirm": false,
+      "plans": ["prepaid"]
     }
   ],
   "vas": {

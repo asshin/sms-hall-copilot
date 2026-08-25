@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
-SENSITIVE = {"pause_data", "resume_data", "subscribe_vas", "unsubscribe_vas", "topup"}
+SENSITIVE = {"pause_data", "resume_data", "subscribe_vas", "unsubscribe_vas", "topup", "voucher_topup"}
 
 PLAN_ONLY = {
     "pause_data": {"prepaid"},
     "resume_data": {"prepaid"},
     "topup": {"prepaid"},
+    "voucher_topup": {"prepaid"},
     "query_bill": {"postpaid"},
 }
 
@@ -25,6 +26,8 @@ def forbid_reason(intent: str, user: dict[str, Any]) -> str | None:
             return "prepaid_no_bill"
         if intent in {"pause_data", "resume_data"}:
             return "postpaid_no_pause"
+        if intent == "voucher_topup":
+            return "voucher_prepaid_only"
         return "plan_mismatch"
     if intent == "pause_data" and user.get("data_paused"):
         return "already_paused"
@@ -38,4 +41,19 @@ def forbid_reason(intent: str, user: dict[str, Any]) -> str | None:
         code = (user.get("_slots") or {}).get("vas_code") or "caller_id"
         if code not in user.get("vas", []):
             return "vas_not_on"
+    if intent == "set_language":
+        lang = (user.get("_slots") or {}).get("lang")
+        if lang and user.get("lang") == lang:
+            return "already_lang"
+    if intent == "voucher_topup":
+        pin = str((user.get("_slots") or {}).get("pin") or "")
+        if not pin:
+            return "need_pin"
+        from app.tools import inspect_voucher
+
+        card = inspect_voucher(pin)
+        if card is None:
+            return "invalid_pin"
+        if card.get("used"):
+            return "voucher_used"
     return None
