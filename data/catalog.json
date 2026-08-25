@@ -1,0 +1,177 @@
+{
+  "operator": "HarborTel",
+  "shortcode": "1880",
+  "disclaimer": "Fictional carrier for a personal portfolio. Not a real operator.",
+  "root_menu": {
+    "zh": "HarborTel短厅\n1 查询\n2 套餐与流量\n3 增值业务\n4 服务设置\n5 充值\n0 退出",
+    "en": "HarborTel SMS Hall\n1 Query\n2 Plans & data\n3 VAS\n4 Settings\n5 Top up\n0 Exit"
+  },
+  "menus": [
+    {
+      "code": "1",
+      "parent": "",
+      "zh": "查询\n1 余额\n2 剩余流量\n3 账单(后付)\n0 返回",
+      "en": "Query\n1 Balance\n2 Remaining data\n3 Bill (postpaid)\n0 Back"
+    },
+    {
+      "code": "2",
+      "parent": "",
+      "zh": "套餐与流量\n1 当前套餐\n0 返回",
+      "en": "Plans & data\n1 Current plan\n0 Back"
+    },
+    {
+      "code": "3",
+      "parent": "",
+      "zh": "增值业务\n1 来电显示\n2 呼叫等待\n0 返回",
+      "en": "VAS\n1 Caller ID\n2 Call waiting\n0 Back"
+    },
+    {
+      "code": "4",
+      "parent": "",
+      "zh": "服务设置\n1 暂停数据(预付)\n2 恢复数据(预付)\n3 语言\n0 返回",
+      "en": "Settings\n1 Pause data (prepaid)\n2 Resume data (prepaid)\n3 Language\n0 Back"
+    },
+    {
+      "code": "5",
+      "parent": "",
+      "zh": "充值\n请回复金额，例如 50\n0 返回",
+      "en": "Top up\nReply with amount, e.g. 50\n0 Back"
+    }
+  ],
+  "commands": [
+    {
+      "code": "BAL",
+      "intent": "query_balance",
+      "hidden": true,
+      "confirm": false,
+      "plans": ["prepaid", "postpaid"]
+    },
+    {
+      "code": "DATA",
+      "intent": "query_data",
+      "hidden": true,
+      "confirm": false,
+      "plans": ["prepaid", "postpaid"]
+    },
+    {
+      "code": "BILL",
+      "intent": "query_bill",
+      "hidden": true,
+      "confirm": false,
+      "plans": ["postpaid"]
+    },
+    {
+      "code": "PLAN",
+      "intent": "query_plan",
+      "hidden": true,
+      "confirm": false,
+      "plans": ["prepaid", "postpaid"]
+    },
+    {
+      "code": "STOP",
+      "intent": "pause_data",
+      "hidden": true,
+      "confirm": true,
+      "plans": ["prepaid"]
+    },
+    {
+      "code": "PAUSE",
+      "intent": "pause_data",
+      "hidden": true,
+      "confirm": true,
+      "plans": ["prepaid"]
+    },
+    {
+      "code": "RESUME",
+      "intent": "resume_data",
+      "hidden": true,
+      "confirm": true,
+      "plans": ["prepaid"]
+    },
+    {
+      "code": "CID",
+      "intent": "subscribe_vas",
+      "hidden": true,
+      "confirm": true,
+      "plans": ["prepaid", "postpaid"],
+      "slots": { "vas_code": "caller_id" }
+    },
+    {
+      "code": "CIDOFF",
+      "intent": "unsubscribe_vas",
+      "hidden": true,
+      "confirm": true,
+      "plans": ["prepaid", "postpaid"],
+      "slots": { "vas_code": "caller_id" }
+    },
+    {
+      "code": "11",
+      "intent": "query_balance",
+      "hidden": false,
+      "confirm": false,
+      "plans": ["prepaid", "postpaid"]
+    },
+    {
+      "code": "12",
+      "intent": "query_data",
+      "hidden": false,
+      "confirm": false,
+      "plans": ["prepaid", "postpaid"]
+    },
+    {
+      "code": "13",
+      "intent": "query_bill",
+      "hidden": false,
+      "confirm": false,
+      "plans": ["postpaid"]
+    },
+    {
+      "code": "21",
+      "intent": "query_plan",
+      "hidden": false,
+      "confirm": false,
+      "plans": ["prepaid", "postpaid"]
+    },
+    {
+      "code": "31",
+      "intent": "subscribe_vas",
+      "hidden": false,
+      "confirm": true,
+      "plans": ["prepaid", "postpaid"],
+      "slots": { "vas_code": "caller_id" }
+    },
+    {
+      "code": "32",
+      "intent": "subscribe_vas",
+      "hidden": false,
+      "confirm": true,
+      "plans": ["prepaid", "postpaid"],
+      "slots": { "vas_code": "call_waiting" }
+    },
+    {
+      "code": "41",
+      "intent": "pause_data",
+      "hidden": false,
+      "confirm": true,
+      "plans": ["prepaid"]
+    },
+    {
+      "code": "42",
+      "intent": "resume_data",
+      "hidden": false,
+      "confirm": true,
+      "plans": ["prepaid"]
+    },
+    {
+      "code": "43",
+      "intent": "set_language",
+      "hidden": false,
+      "confirm": false,
+      "plans": ["prepaid", "postpaid"]
+    }
+  ],
+  "vas": {
+    "caller_id": { "zh": "来电显示", "en": "Caller ID", "monthly_fee": 8 },
+    "call_waiting": { "zh": "呼叫等待", "en": "Call waiting", "monthly_fee": 5 }
+  }
+}

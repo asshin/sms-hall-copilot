@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HarborTel SMS Hall Copilot</title>
+  <style>
+    :root {
+      --bg: #12141a;
+      --panel: #1b1e27;
+      --line: #2c3140;
+      --text: #e8eaed;
+      --muted: #8b93a7;
+      --accent: #c8a36a;
+      --up: #d7c4a3;
+      --down: #1f6f4a;
+      --down-text: #d4efe3;
+      --danger: #c45c5c;
+      --ok: #3d9b6e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 14px/1.45 "Segoe UI", "PingFang SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      padding: 18px 24px 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    header h1 { font-size: 18px; font-weight: 600; margin: 0 0 6px; }
+    header p { margin: 0; color: var(--muted); max-width: 880px; }
+    .tabs { display: flex; gap: 8px; padding: 12px 24px 0; }
+    .tabs button {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    .tabs button.on { color: var(--text); border-color: var(--accent); }
+    .layout { display: grid; grid-template-columns: 360px 1fr; gap: 20px; padding: 16px 24px 32px; }
+    .phone {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 16px 14px 14px;
+      min-height: 640px;
+      display: flex;
+      flex-direction: column;
+    }
+    .status {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .thread {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px 4px 12px;
+    }
+    .bubble {
+      max-width: 82%;
+      padding: 8px 10px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .bubble.up { align-self: flex-end; background: var(--up); color: #1a1208; }
+    .bubble.down { align-self: flex-start; background: var(--down); color: var(--down-text); }
+    .composer { display: flex; gap: 8px; }
+    select, input, textarea, button.act {
+      font: inherit;
+      background: #10131a;
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 8px;
+    }
+    input { flex: 1; }
+    button.act { background: var(--accent); color: #1a1208; border: 0; cursor: pointer; font-weight: 600; }
+    button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); cursor: pointer; padding: 8px; }
+    .side { display: flex; flex-direction: column; gap: 12px; }
+    .card { background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; }
+    .card h2 { margin: 0 0 8px; font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .kv { display: grid; grid-template-columns: 120px 1fr; gap: 6px 10px; font-variant-numeric: tabular-nums; }
+    .kv span { color: var(--muted); }
+    .pill { display: inline-block; padding: 1px 8px; border: 1px solid var(--line); font-size: 12px; }
+    .ok { color: var(--ok); }
+    .bad { color: var(--danger); }
+    textarea { width: 100%; min-height: 90px; resize: vertical; }
+    pre { margin: 0; white-space: pre-wrap; color: var(--muted); font-size: 12px; }
+    .hidden { display: none; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HarborTel SMS Hall Copilot</h1>
+    <p>虚构运营商短厅。精确指令走规则，口语走意图识别，关停/订购必须确认。不含现网数据。</p>
+  </header>
+  <div class="tabs">
+    <button class="on" data-tab="sms">用户短厅</button>
+    <button data-tab="cfg">配置助手</button>
+  </div>
+
+  <section id="tab-sms" class="layout">
+    <div class="phone">
+      <div class="status" id="status">1880 · 选择演示号码</div>
+      <div class="thread" id="thread"></div>
+      <div class="composer">
+        <input id="sms" placeholder="BAL / 帮我查下话费 / 暂停数据" />
+        <button class="act" id="send">发送</button>
+      </div>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h2>演示号码</h2>
+        <div class="row">
+          <select id="msisdn"></select>
+          <button class="ghost" id="reset">重置会话</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>本轮 Trace</h2>
+        <div class="kv" id="kv"></div>
+      </div>
+      <div class="card">
+        <h2>评测</h2>
+        <div class="row">
+          <button class="act" id="evalBtn">跑评测集</button>
+          <span id="evalOut" class="pill">未跑</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-cfg" class="layout hidden">
+    <div class="card" style="grid-column: 1 / -1">
+      <h2>自然语言 → 隐性指令草案</h2>
+      <textarea id="req">预付费用户发送 STOP 暂停本地和漫游数据，需要 Y 确认。对接 CRM 暂停接口。</textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="act" id="draftBtn">生成草案</button>
+      </div>
+      <pre id="draftOut" style="margin-top:12px"></pre>
+    </div>
+  </section>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let meta = null;
+
+    async function boot() {
+      meta = await (await fetch("/api/meta")).json();
+      $("msisdn").innerHTML = meta.users.map(u =>
+        `<option value="${u.msisdn}">${u.msisdn} · ${u.hint}</option>`
+      ).join("");
+      $("status").textContent = `${meta.shortcode} · ${meta.operator}`;
+      paintKv(null);
+    }
+
+    function addBubble(kind, text) {
+      const el = document.createElement("div");
+      el.className = "bubble " + kind;
+      el.textContent = text;
+      $("thread").appendChild(el);
+      $("thread").scrollTop = $("thread").scrollHeight;
+    }
+
+    function paintKv(trace) {
+      if (!trace) {
+        $("kv").innerHTML = "<span>route</span><div>—</div>";
+        return;
+      }
+      const rows = [
+        ["route", trace.route],
+        ["intent", trace.intent],
+        ["matched", trace.matched_code || "—"],
+        ["confirm", String(trace.confirm_required)],
+        ["forbidden", String(trace.forbidden)],
+        ["tools", (trace.tools || []).join(", ") || "—"],
+        ["latency", trace.latency_ms + " ms"],
+        ["sms", `${trace.sms_encoding} / ${trace.sms_parts} part(s)`],
+        ["tokens", `${trace.prompt_tokens} + ${trace.completion_tokens}`],
+        ["cost", "$" + (trace.cost_usd || 0)],
+        ["fallback", trace.fallback_reason || "—"],
+      ];
+      $("kv").innerHTML = rows.map(([k,v]) => `<span>${k}</span><div>${v}</div>`).join("");
+    }
+
+    async function send() {
+      const text = $("sms").value.trim();
+      if (!text) return;
+      $("sms").value = "";
+      addBubble("up", text);
+      const res = await fetch("/api/sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ msisdn: $("msisdn").value, text }),
+      });
+      const data = await res.json();
+      (data.replies || []).forEach((r) => addBubble("down", r));
+      paintKv(data.trace);
+    }
+
+    $("send").onclick = send;
+    $("sms").addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+    $("reset").onclick = async () => {
+      await fetch("/api/reset?msisdn=" + encodeURIComponent($("msisdn").value), { method: "POST" });
+      $("thread").innerHTML = "";
+      paintKv(null);
+    };
+    $("evalBtn").onclick = async () => {
+      $("evalOut").textContent = "running…";
+      const m = await (await fetch("/api/eval", { method: "POST" })).json();
+      $("evalOut").textContent = `${m.passed}/${m.total}  ${Math.round(m.accuracy * 100)}%`;
+      $("evalOut").className = "pill " + (m.accuracy >= 0.9 ? "ok" : "bad");
+    };
+    $("draftBtn").onclick = async () => {
+      const data = await (await fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requirement: $("req").value }),
+      })).json();
+      $("draftOut").textContent = JSON.stringify(data, null, 2);
+    };
+    document.querySelectorAll(".tabs button").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll(".tabs button").forEach((b) => b.classList.remove("on"));
+        btn.classList.add("on");
+        $("tab-sms").classList.toggle("hidden", btn.dataset.tab !== "sms");
+        $("tab-cfg").classList.toggle("hidden", btn.dataset.tab !== "cfg");
+      };
+    });
+    boot();
+  </script>
+</body>
+</html>
