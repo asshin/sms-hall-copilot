@@ -61,4 +61,4 @@ def test_voucher_redeem_then_balance():
     assert done.trace.tools == ["redeem_voucher"]
     assert "50" in done.replies[0]
     bal = handle_mo("85259990001", "BAL")
-    assert "98.5" in bal.replies[0]
+    assert "238.5" in bal.replies[0]

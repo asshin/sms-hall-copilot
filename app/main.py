@@ -100,7 +100,7 @@ def meta() -> dict:
                 "msisdn": u["msisdn"],
                 "plan": u["plan"],
                 "lang": u["lang"],
-                "hint": f"{u['plan']} / {u['lang']}",
+                "hint": u.get("demo_hint") or f"{u['plan']} / {u['lang']}",
             }
             for u in load_users().values()
         ],

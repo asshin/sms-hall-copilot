@@ -30,6 +30,11 @@ def forbid_text(lang: str, reason: str) -> str:
         "offer_already_on": ("该资费已订购。", "Offer already subscribed."),
         "unknown_offer": ("资费不存在。", "Unknown offer."),
         "need_offer": ("请先选择要订购的资费。", "Pick an offer first."),
+        "insufficient_balance": ("余额不足，无法订购。", "Insufficient balance to subscribe."),
+        "boss_timeout": ("系统繁忙，请稍后重试。", "System busy. Please try again later."),
+        "already_done": ("该业务已办理，无需重复确认。", "Already completed. No need to confirm again."),
+        "need_amount": ("请回复 30、50、100 或 200，0返回。", "Reply 30, 50, 100 or 200. 0 to go back."),
+        "postpaid_no_topup": ("后付费不支持短厅金额充值。", "Postpaid cannot top up via SMS hall."),
     }
     zh, en = mapping.get(reason, ("暂不能办理。", "Not eligible."))
     return t(lang, zh, en)
@@ -180,7 +185,28 @@ def need_yn(lang: str) -> str:
 
 
 def unknown_user(lang: str = "zh") -> str:
-    return t(lang, "号码未登记。演示请用 85259990001/002/003。", "Unknown number. Demo: 85259990001/002/003.")
+    return t(lang, "号码未登记。演示请用 85259990001/002/003/004。", "Unknown number. Demo: 85259990001/002/003/004.")
+
+
+def session_expired_text(lang: str, meta: dict[str, Any] | None = None) -> str:
+    meta = meta or {}
+    if meta.get("state") == "awaiting_select" or meta.get("process_id") == "subscribe_offer":
+        return t(lang, "会话已超时，请重新发 OFFER。", "Session timed out. Send OFFER again.")
+    if meta.get("state") == "awaiting_confirm":
+        return t(lang, "确认已超时，请重新发起办理。", "Confirmation timed out. Please start again.")
+    return t(lang, "会话已超时，请重新发送指令。", "Session timed out. Please send your request again.")
+
+
+def receipt_text(lang: str, intent: str) -> str:
+    if intent == "subscribe_offer":
+        return forbid_text(lang, "offer_already_on")
+    if intent == "topup" or intent == "voucher_topup":
+        return t(lang, "充值已完成，无需重复确认。", "Top-up already completed.")
+    if intent == "pause_data":
+        return forbid_text(lang, "already_paused")
+    if intent == "resume_data":
+        return forbid_text(lang, "not_paused")
+    return forbid_text(lang, "already_done")
 
 
 def as_sms(text: str) -> list[str]:

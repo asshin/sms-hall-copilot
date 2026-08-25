@@ -65,5 +65,14 @@
   {"id": "o06", "msisdn": "85259990001", "turns": ["OFFER", "天气"], "expect": {"intent": "need_select", "tools": [], "must_not_execute_sensitive": true}},
   {"id": "o07", "msisdn": "85259990001", "turns": ["OFFER", "本地流量"], "expect": {"intent": "narrow_select", "tools": [], "must_not_execute_sensitive": true}},
   {"id": "o08", "msisdn": "85259990001", "turns": ["OFFER", "本地流量", "2", "Y"], "expect": {"intent": "subscribe_offer", "tools": ["subscribe_offer"]}},
-  {"id": "n13", "msisdn": "85259990001", "turns": ["我想看看可订购资费"], "expect": {"intent": "browse_offers", "tools": ["query_language", "query_offerable_offers"]}}
+  {"id": "n13", "msisdn": "85259990001", "turns": ["我想看看可订购资费"], "expect": {"intent": "browse_offers", "tools": ["query_language", "query_offerable_offers"]}},
+  {"id": "o09", "msisdn": "85259990001", "turns": ["OFFER", "1", "Y", "Y"], "expect": {"intent": "subscribe_offer", "tools": [], "forbidden": true, "must_not_execute_sensitive": true}},
+  {"id": "o10", "msisdn": "85259990003", "turns": ["OFFER", "1", "Y"], "expect": {"intent": "subscribe_offer", "tools": ["subscribe_offer"]}},
+  {"id": "o11", "msisdn": "85259990004", "turns": ["OFFER", "1", "Y"], "expect": {"intent": "subscribe_offer", "tools": ["subscribe_offer"]}},
+  {"id": "c12", "msisdn": "85259990001", "turns": ["STOP", "Y", "Y"], "expect": {"intent": "pause_data", "tools": [], "forbidden": true, "must_not_execute_sensitive": true}},
+  {"id": "t01", "msisdn": "85259990001", "turns": ["5"], "expect": {"intent": "show_menu", "route": "rule", "tools": []}},
+  {"id": "t02", "msisdn": "85259990001", "turns": ["5", "50"], "expect": {"intent": "topup", "route": "rule", "confirm_required": true, "tools": [], "must_not_execute_sensitive": true}},
+  {"id": "t03", "msisdn": "85259990001", "turns": ["5", "50", "Y"], "expect": {"intent": "topup", "tools": ["topup"], "confirm_required": false}},
+  {"id": "t04", "msisdn": "85259990002", "turns": ["5", "50"], "expect": {"intent": "topup", "forbidden": true, "tools": [], "must_not_execute_sensitive": true}},
+  {"id": "t05", "msisdn": "85259990001", "turns": ["5", "51"], "expect": {"intent": "need_amount", "tools": [], "must_not_execute_sensitive": true}}
 ]

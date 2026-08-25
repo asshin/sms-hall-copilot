@@ -98,6 +98,13 @@ def unsubscribe_vas(msisdn: str, vas_code: str = "caller_id") -> dict[str, Any]:
     return {"ok": True, "vas_code": vas_code}
 
 
+def topup_amounts() -> set[int]:
+    from app.catalog import load_catalog
+
+    raw = load_catalog().get("topup_amounts") or [30, 50, 100, 200]
+    return {int(x) for x in raw}
+
+
 def topup(msisdn: str, amount: float) -> dict[str, Any]:
     u = _users()[msisdn]
     u["balance"] = round(float(u.get("balance") or 0) + amount, 2)

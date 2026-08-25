@@ -10,10 +10,27 @@ from app.session import store
 
 def start_offer_flow(user: dict[str, Any], started: float, source: str = "rule") -> TurnResult:
     """Declared 2way: QueryLanguage → QueryOfferableOffers → wait for a list choice."""
+    from app.engine import _finish
+
     msisdn = user["msisdn"]
+    lang = user.get("lang") or "zh"
     lang_res = boss.query_language(msisdn)
+    if not lang_res.get("ok"):
+        reason = str(lang_res.get("reason") or "boss_timeout")
+        trace = Trace(route=source, intent="browse_offers", tools=["query_language"], fallback_reason=reason, forbidden=True)
+        return _finish(msisdn, replies.forbid_text(lang, reason), trace, started)
+    lang = lang_res.get("lang") or lang
     offers_res = boss.query_offerable_offers(msisdn)
-    lang = lang_res.get("lang") or user.get("lang") or "zh"
+    if not offers_res.get("ok"):
+        reason = str(offers_res.get("reason") or "boss_timeout")
+        trace = Trace(
+            route=source,
+            intent="browse_offers",
+            tools=["query_language", "query_offerable_offers"],
+            fallback_reason=reason,
+            forbidden=True,
+        )
+        return _finish(msisdn, replies.forbid_text(lang, reason), trace, started)
     items = list(offers_res.get("offers") or [])
     sess = store.get(msisdn)
     sess.state = "awaiting_select"
@@ -28,8 +45,6 @@ def start_offer_flow(user: dict[str, Any], started: float, source: str = "rule")
         intent="browse_offers",
         tools=["query_language", "query_offerable_offers"],
     )
-    from app.engine import _finish
-
     return _finish(msisdn, text, trace, started)
 
 

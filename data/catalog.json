@@ -2,6 +2,12 @@
   "operator": "HarborTel",
   "shortcode": "1880",
   "disclaimer": "Fictional carrier for a personal portfolio. Not a real operator.",
+  "topup_amounts": [
+    30,
+    50,
+    100,
+    200
+  ],
   "root_menu": {
     "zh": "HarborTel短厅\n1 查询\n2 套餐与流量\n3 增值业务\n4 服务设置\n5 充值\n0 退出",
     "en": "HarborTel SMS Hall\n1 Query\n2 Plans & data\n3 VAS\n4 Settings\n5 Top up\n0 Exit"
@@ -34,8 +40,8 @@
     {
       "code": "5",
       "parent": "",
-      "zh": "充值\n请回复金额，例如 50\n0 返回",
-      "en": "Top up\nReply with amount, e.g. 50\n0 Back"
+      "zh": "充值\n请回复 30/50/100/200\n0 返回",
+      "en": "Top up\nReply 30, 50, 100 or 200\n0 Back"
     }
   ],
   "commands": [

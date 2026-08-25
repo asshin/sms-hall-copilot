@@ -3,12 +3,13 @@
     "msisdn": "85259990001",
     "plan": "prepaid",
     "lang": "zh",
-    "balance": 48.5,
+    "balance": 188.5,
     "data_mb": 1220,
     "data_paused": false,
     "plan_name_zh": "畅游预付 8GB",
     "plan_name_en": "Prepaid 8GB",
-    "vas": ["caller_id"]
+    "vas": ["caller_id"],
+    "demo_hint": "prepaid / zh"
   },
   "85259990002": {
     "msisdn": "85259990002",
@@ -20,7 +21,8 @@
     "data_paused": false,
     "plan_name_zh": "后付 20GB",
     "plan_name_en": "Postpaid 20GB",
-    "vas": []
+    "vas": [],
+    "demo_hint": "postpaid / en"
   },
   "85259990003": {
     "msisdn": "85259990003",
@@ -31,6 +33,22 @@
     "data_paused": true,
     "plan_name_zh": "畅游预付 3GB",
     "plan_name_en": "Prepaid 3GB",
-    "vas": []
+    "vas": [],
+    "demo_hint": "prepaid / low balance"
+  },
+  "85259990004": {
+    "msisdn": "85259990004",
+    "plan": "prepaid",
+    "lang": "zh",
+    "balance": 200,
+    "data_mb": 500,
+    "data_paused": false,
+    "plan_name_zh": "畅游预付 8GB",
+    "plan_name_en": "Prepaid 8GB",
+    "vas": [],
+    "faults": {
+      "subscribe_offer": "boss_timeout"
+    },
+    "demo_hint": "prepaid / BOSS timeout"
   }
 }

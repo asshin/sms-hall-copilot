@@ -37,13 +37,16 @@ sms-hall-copilot/
 `engine.handle_mo` 顺序：
 
 1. 号码不在 `users.json` → 拒绝。
-2. `awaiting_confirm` → 只接受 Y/N。
-3. `awaiting_select` → `flow.handle_offer_select`（资费列表选择）。
-4. `matcher.match_rule`：短码/隐性指令/菜单数字/充值卡 `V`+8 位。
-5. 未命中：RAG + `llm.classify` 或 `heuristic.plan`。
-6. `_dispatch`：菜单、`browse_offers` 流程、out_of_scope、policy、确认门、`tools.run_tool`、模板短信。
+2. 会话 TTL 120s：若过期前是 `awaiting_select` / `awaiting_confirm`，本轮只回 `session_expired`，不执行该 MO。
+3. `awaiting_confirm` → 只接受 Y/N。
+4. `awaiting_select` → `flow.handle_offer_select`（资费列表选择）。
+5. 空闲态重复 `Y` 且有上一笔成功回执 → 不再调工具。
+6. `in_menu` 且目录 5 → 金额 30/50/100/200 进入 `topup` 确认门。
+7. `matcher.match_rule`：短码/隐性指令/菜单数字/充值卡 `V`+8 位。
+8. 未命中：RAG + `llm.classify` 或 `heuristic.plan`（分类结果经 intent 白名单）。
+9. `_dispatch`：菜单、`browse_offers` 流程、out_of_scope、policy、确认门、`tools.run_tool`、模板短信。
 
-会话（`session.py`，TTL 120s）：`idle | in_menu | awaiting_select | awaiting_confirm`。选择态保存 `select_list` 与 `process_id=subscribe_offer`。
+会话（`session.py`，TTL 120s）：`idle | in_menu | awaiting_select | awaiting_confirm`。选择态保存 `select_list` 与 `process_id=subscribe_offer`。敏感办理成功后写入 `last_receipt`，空闲态再回 `Y` 只出回执。
 
 短信（`sms.py`）：纯 GSM 7bit 160 字，否则 UCS-2 70 字，超长拆分。
 
@@ -52,8 +55,8 @@ sms-hall-copilot/
 | 文件 | 职责 |
 |------|------|
 | `matcher.py` | 精确指令与菜单，不调模型 |
-| `heuristic.py` / `llm.py` | 口语 → intent JSON |
-| `policy.py` | 套餐、状态、确认集合 `SENSITIVE` |
+| `heuristic.py` / `llm.py` | 口语 → intent JSON；分类结果经 `clamp_classify_intent` 白名单 |
+| `policy.py` | 套餐、状态、确认集合 `SENSITIVE`、分类允许集 `CLASSIFY_INTENTS` |
 | `tools.py` | 单意图 Mock BSS（余额、暂停、VAS、券、自定义意图 Mock） |
 | `boss.py` | 下游 Mock：语言、可订购列表、订购 |
 | `flow.py` | 资费 2way 编排 |
@@ -72,7 +75,7 @@ sms-hall-copilot/
 | 文件 | 内容 |
 |------|------|
 | `data/catalog.json` | 运营商、菜单、隐性指令（含 `OFFER`、`GPNT`） |
-| `data/users.json` | 三个演示号码 |
+| `data/users.json` | 四个演示号码（含 003 余额不足、004 BOSS 超时） |
 | `data/intents.json` | 配置助手写入的自定义意图 |
 | `data/offers.json` | Mock BOSS 可订购资费 1–8 |
 | `data/vouchers.json` | 演示卡密 |
@@ -88,8 +91,10 @@ sms-hall-copilot/
 3. `match_select`：数字按**当前 `select_list` 的原 index**（缩小后仍是 4、7，不是重排成 1、2）；「第 N 个」按当前可见顺序；名称/别名/纠错（`流程`→`流量`）。得分 ≥70 的若有多项 → `reason=ambiguous` + `candidates`，`flow` 把 `select_list` 换成候选并下行 `narrow_select`，不调 LLM 打破平局。唯一命中才进确认。仍完全对不上且启用了 LLM 则 `complete_json`，index 必须落在本轮可见列表。
 4. 命中后挂起 `subscribe_offer`，Y 之后 `boss.subscribe_offer(msisdn, offer_id)`。
 5. 已订购再选同一档 → `offer_already_on`。完全对不上 → `need_select`，列表不变。
+6. 预付订购扣减余额；余额不足 → `insufficient_balance`。用户 `faults.subscribe_offer=boss_timeout`（演示号 004）→ 系统繁忙，不写入已订购。
+7. 查询语言/列表若 BOSS 失败，不进入 `awaiting_select`。
 
-评测：`o07` 为 `OFFER`+`本地流量` → `narrow_select`；`o08` 再回 `2`+`Y` 订 10G。
+评测：`o07` 为 `OFFER`+`本地流量` → `narrow_select`；`o08` 再回 `2`+`Y` 订 10G；`o09` 重复 `Y` 不再调工具；`o10`/`o11` 为余额不足与 BOSS 超时；`t01`–`t05` 为菜单金额充值。
 
 不要在选择态把 `1` 交给菜单匹配：`awaiting_select` 必须在 `match_rule` 之前处理。
 
@@ -105,10 +110,9 @@ sms-hall-copilot/
 2. 在 `flow.py` 增加过程：查 → 把列表/槽位写入 session → 等待 → 确认 → 办理。
 3. 选择类步骤复用 `select_match.match_select`，禁止模型输出列表外 ID。
 4. 入口指令写入 catalog；口语关键词写入 `heuristic.py`。
-5. 在 `eval_set.json` 增加：列表展示、编号、名称/错别字、无法识别、确认后才出订购工具。
+5. 在 `eval_set.json` 增加：列表展示、编号、名称/错别字、无法识别、确认后才出订购工具、超时/重复确认/余额不足/BOSS 超时。
 
 ## 9. 已知边界
 
-- 菜单金额充值（目录 5）未接到会话，Demo 用充值卡。
 - 自定义意图的 Mock 不改用户余额等运行时字段，除非另写工具。
 - 配置助手不能从自然语言发明全新 BOSS 编排；多接口流程目前在代码里声明（资费订购），尚未做成可视化流程编辑器。

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import time
 from typing import Any
 
@@ -12,6 +13,8 @@ from app.rag import search
 from app.session import store
 from app.sms import compose_meta
 
+_AMOUNT = re.compile(r"^\d{1,4}$")
+
 
 def handle_mo(msisdn: str, text: str) -> TurnResult:
     started = time.perf_counter()
@@ -22,6 +25,14 @@ def handle_mo(msisdn: str, text: str) -> TurnResult:
 
     lang: str = user.get("lang") or "zh"
     sess = store.get(msisdn)
+    expired = store.consume_expired(msisdn)
+    if expired:
+        return _finish(
+            msisdn,
+            replies.session_expired_text(lang, expired),
+            Trace(route="rule", intent="session_expired", fallback_reason=expired.get("state")),
+            started,
+        )
 
     if sess.state == "awaiting_confirm":
         if matcher.is_yes(text):
@@ -43,6 +54,21 @@ def handle_mo(msisdn: str, text: str) -> TurnResult:
 
         return handle_offer_select(user, text, started)
 
+    if matcher.is_yes(text) and sess.last_receipt:
+        receipt = sess.last_receipt
+        intent = str(receipt.get("intent") or "already_done")
+        return _finish(
+            msisdn,
+            replies.receipt_text(lang, intent),
+            Trace(route="confirm", intent=intent, forbidden=True),
+            started,
+        )
+
+    if sess.state == "in_menu" and sess.menu_code == "5":
+        handled = _handle_topup_menu(user, text, lang, started)
+        if handled is not None:
+            return handled
+
     rule = matcher.match_rule(text, user)
     if rule:
         rule.slots["matched_code"] = matcher.normalize(text)
@@ -53,6 +79,7 @@ def handle_mo(msisdn: str, text: str) -> TurnResult:
     try:
         if settings.llm_enabled:
             plan = llm.classify(text, user)
+            fallback = (plan.slots or {}).pop("_fallback", None)
         else:
             plan = heuristic.plan(text)
     except Exception as exc:  # noqa: BLE001 — demo must degrade
@@ -62,6 +89,27 @@ def handle_mo(msisdn: str, text: str) -> TurnResult:
     if rag_hits:
         plan.slots.setdefault("rag", rag_hits)
     return _dispatch(user, plan, lang, started, confirmed=False, fallback=fallback, rag_hits=rag_hits)
+
+
+def _handle_topup_menu(user: dict[str, Any], text: str, lang: str, started: float) -> TurnResult | None:
+    compact = matcher.normalize(text)
+    if compact in {"0", "０"} or matcher.is_no(text):
+        plan = IntentPlan(intent="show_menu", slots={"menu_code": ""}, source="rule")
+        return _dispatch(user, plan, lang, started, confirmed=False)
+    raw = text.strip()
+    if _AMOUNT.fullmatch(raw):
+        amount = int(raw)
+        allowed = tools.topup_amounts()
+        if amount not in allowed:
+            return _finish(
+                user["msisdn"],
+                replies.forbid_text(lang, "need_amount"),
+                Trace(route="rule", intent="need_amount"),
+                started,
+            )
+        plan = IntentPlan(intent="topup", slots={"amount": amount}, confirm=True, source="rule")
+        return _dispatch(user, plan, lang, started, confirmed=False)
+    return None
 
 
 def _dispatch(
@@ -138,13 +186,16 @@ def _dispatch(
 
     tool_name, payload = tools.run_tool(plan.intent, msisdn, plan.slots)
     text = replies.result_text(lang, plan.intent, payload, plan.slots)
+    if payload.get("ok") and requires_confirm(plan.intent):
+        sess.last_receipt = {"intent": plan.intent, "slots": dict(plan.slots)}
+        sess.touch()
     trace = Trace(
         route=plan.source,
         intent=plan.intent,
         matched_code=matched,
         tools=[tool_name],
         rag_hits=list(rag_hits)[:2],
-        fallback_reason=fallback,
+        fallback_reason=fallback if payload.get("ok") else (payload.get("reason") or fallback),
     )
     return _finish(msisdn, text, trace, started, usage)
 

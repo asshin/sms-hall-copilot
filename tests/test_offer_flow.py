@@ -52,6 +52,7 @@ def test_offer_flow_number_then_confirm():
     assert "50G" in done.replies[0]
     user = snapshot("85259990001")
     assert "OFF_50G_LOCAL" in (user.get("offers") or [])
+    assert user["balance"] == 100.5
 
 
 def test_offer_flow_ordinal_and_typo_name():

@@ -4,6 +4,37 @@ from typing import Any
 
 SENSITIVE = {"pause_data", "resume_data", "subscribe_vas", "unsubscribe_vas", "topup", "voucher_topup", "subscribe_offer"}
 
+# Intents the classifier may emit. subscribe_offer is not here: user must browse_offers first.
+CLASSIFY_INTENTS = {
+    "query_balance",
+    "query_data",
+    "query_bill",
+    "query_plan",
+    "pause_data",
+    "resume_data",
+    "subscribe_vas",
+    "unsubscribe_vas",
+    "show_menu",
+    "topup",
+    "set_language",
+    "voucher_topup",
+    "browse_offers",
+    "out_of_scope",
+}
+
+
+def allowed_classify_intents() -> set[str]:
+    from app.intents_registry import intent_ids
+
+    return CLASSIFY_INTENTS | intent_ids()
+
+
+def clamp_classify_intent(intent: str) -> tuple[str, str | None]:
+    if intent in allowed_classify_intents():
+        return intent, None
+    return "out_of_scope", "illegal_intent"
+
+
 PLAN_ONLY = {
     "pause_data": {"prepaid"},
     "resume_data": {"prepaid"},
@@ -41,6 +72,8 @@ def forbid_reason(intent: str, user: dict[str, Any]) -> str | None:
             return "postpaid_no_pause"
         if intent == "voucher_topup":
             return "voucher_prepaid_only"
+        if intent == "topup":
+            return "postpaid_no_topup"
         return "plan_mismatch"
     if intent == "pause_data" and user.get("data_paused"):
         return "already_paused"
