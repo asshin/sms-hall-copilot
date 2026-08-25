@@ -50,7 +50,7 @@ def match_select(text: str, items: list[dict[str, Any]], *, use_llm: bool | None
     digit = _digit(raw, by_index)
     if digit:
         return digit
-    ordinal = _ordinal(raw, by_index)
+    ordinal = _ordinal(raw, items)
     if ordinal:
         return ordinal
     named = _named(raw, items)
@@ -62,12 +62,28 @@ def match_select(text: str, items: list[dict[str, Any]], *, use_llm: bool | None
     return _llm_select(raw, items)
 
 
-def _miss(reason: str) -> dict[str, Any]:
-    return {"ok": False, "index": None, "item": None, "source": "none", "reason": reason, "confidence": 0.0}
+def _miss(reason: str, candidates: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    return {
+        "ok": False,
+        "index": None,
+        "item": None,
+        "source": "none",
+        "reason": reason,
+        "confidence": 0.0,
+        "candidates": list(candidates or []),
+    }
 
 
 def _hit(item: dict[str, Any], source: str, confidence: float) -> dict[str, Any]:
-    return {"ok": True, "index": int(item["index"]), "item": item, "source": source, "reason": None, "confidence": confidence}
+    return {
+        "ok": True,
+        "index": int(item["index"]),
+        "item": item,
+        "source": source,
+        "reason": None,
+        "confidence": confidence,
+        "candidates": [],
+    }
 
 
 def _digit(raw: str, by_index: dict[int, dict[str, Any]]) -> dict[str, Any] | None:
@@ -80,18 +96,20 @@ def _digit(raw: str, by_index: dict[int, dict[str, Any]]) -> dict[str, Any] | No
     return _hit(item, "rule", 1.0) if item else _miss("index_out_of_range")
 
 
-def _ordinal(raw: str, by_index: dict[int, dict[str, Any]]) -> dict[str, Any] | None:
+def _ordinal(raw: str, items: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """第N个 / 最后 = current visible list order, not the original full catalog."""
+    ordered = sorted(items, key=lambda i: int(i["index"]))
+    if not ordered:
+        return None
     compact = re.sub(r"\s+", "", raw)
     if compact in {"最后", "最后一个", "last"}:
-        if not by_index:
-            return None
-        item = by_index[max(by_index)]
-        return _hit(item, "heuristic", 0.92)
-    # longest ordinal first
+        return _hit(ordered[-1], "heuristic", 0.92)
     for key in sorted(_ORDINAL, key=len, reverse=True):
         if key in compact:
-            item = by_index.get(_ORDINAL[key])
-            return _hit(item, "heuristic", 0.9) if item else _miss("index_out_of_range")
+            pos = _ORDINAL[key]
+            if 1 <= pos <= len(ordered):
+                return _hit(ordered[pos - 1], "heuristic", 0.9)
+            return _miss("index_out_of_range")
     return None
 
 
@@ -106,38 +124,40 @@ def _named(raw: str, items: list[dict[str, Any]]) -> dict[str, Any] | None:
     needle = _normalize(raw)
     if len(needle) < 2:
         return None
-    exact: list[dict[str, Any]] = []
     scored: list[tuple[int, dict[str, Any]]] = []
     for item in items:
-        names = [_normalize(str(item.get("zh") or "")), _normalize(str(item.get("en") or "")), _normalize(str(item.get("id") or ""))]
-        names.extend(_normalize(a) for a in item.get("aliases") or [])
-        if needle in names or any(needle == n for n in names):
-            exact.append(item)
-            continue
-        score = 0
-        for n in names:
-            if not n:
-                continue
-            if needle in n or n in needle:
-                score = max(score, 80 if min(len(needle), len(n)) >= 4 else 60)
-            overlap = _char_overlap(needle, n)
-            score = max(score, overlap)
-        if score:
+        score = _name_score(needle, item)
+        if score >= 70:
             scored.append((score, item))
-    if len(exact) == 1:
-        return _hit(exact[0], "heuristic", 0.95)
-    if len(exact) > 1:
-        return _miss("ambiguous")
-    scored.sort(key=lambda x: x[0], reverse=True)
     if not scored:
         return None
-    best, item = scored[0]
-    tied = [s for s in scored if s[0] == best]
-    if len(tied) > 1:
-        return _miss("ambiguous")
-    if best >= 70:
-        return _hit(item, "heuristic", min(0.9, best / 100))
+    scored.sort(key=lambda x: (-x[0], int(x[1]["index"])))
+    exact = [it for s, it in scored if s >= 100]
+    if len(scored) == 1:
+        src_score = scored[0][0]
+        return _hit(scored[0][1], "heuristic", 0.95 if src_score >= 100 else min(0.9, src_score / 100))
+    if len(exact) > 1 or len(scored) > 1:
+        return _miss("ambiguous", _sort_items([it for _, it in scored]))
     return None
+
+
+def _name_score(needle: str, item: dict[str, Any]) -> int:
+    names = [_normalize(str(item.get("zh") or "")), _normalize(str(item.get("en") or "")), _normalize(str(item.get("id") or ""))]
+    names.extend(_normalize(a) for a in item.get("aliases") or [])
+    score = 0
+    for n in names:
+        if not n:
+            continue
+        if needle == n:
+            score = max(score, 100)
+        elif needle in n or n in needle:
+            score = max(score, 80 if min(len(needle), len(n)) >= 4 else 60)
+        score = max(score, _char_overlap(needle, n))
+    return score
+
+
+def _sort_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(items, key=lambda i: int(i["index"]))
 
 
 def _char_overlap(a: str, b: str) -> int:

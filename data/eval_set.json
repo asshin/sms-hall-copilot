@@ -63,5 +63,7 @@
   {"id": "o04", "msisdn": "85259990001", "turns": ["OFFER", "第一个", "Y"], "expect": {"intent": "subscribe_offer", "tools": ["subscribe_offer"]}},
   {"id": "o05", "msisdn": "85259990001", "turns": ["OFFER", "50G本地流程", "Y"], "expect": {"intent": "subscribe_offer", "tools": ["subscribe_offer"]}},
   {"id": "o06", "msisdn": "85259990001", "turns": ["OFFER", "天气"], "expect": {"intent": "need_select", "tools": [], "must_not_execute_sensitive": true}},
+  {"id": "o07", "msisdn": "85259990001", "turns": ["OFFER", "本地流量"], "expect": {"intent": "narrow_select", "tools": [], "must_not_execute_sensitive": true}},
+  {"id": "o08", "msisdn": "85259990001", "turns": ["OFFER", "本地流量", "2", "Y"], "expect": {"intent": "subscribe_offer", "tools": ["subscribe_offer"]}},
   {"id": "n13", "msisdn": "85259990001", "turns": ["我想看看可订购资费"], "expect": {"intent": "browse_offers", "tools": ["query_language", "query_offerable_offers"]}}
 ]

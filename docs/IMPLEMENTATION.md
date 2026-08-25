@@ -85,9 +85,11 @@ sms-hall-copilot/
 
 1. 指令 `OFFER` 或口语「可订购资费」→ intent `browse_offers`。
 2. `start_offer_flow` 依次调 `query_language`、`query_offerable_offers`，列表进 session，下行编号列表。
-3. `match_select`：数字正则（含「3号」）；序数「第 N 个」；名称/别名；错别字表（`流程`→`流量`）；仍失败且 `settings.llm_enabled` 则 `complete_json`，index 必须落在本轮列表。
+3. `match_select`：数字按**当前 `select_list` 的原 index**（缩小后仍是 4、7，不是重排成 1、2）；「第 N 个」按当前可见顺序；名称/别名/纠错（`流程`→`流量`）。得分 ≥70 的若有多项 → `reason=ambiguous` + `candidates`，`flow` 把 `select_list` 换成候选并下行 `narrow_select`，不调 LLM 打破平局。唯一命中才进确认。仍完全对不上且启用了 LLM 则 `complete_json`，index 必须落在本轮可见列表。
 4. 命中后挂起 `subscribe_offer`，Y 之后 `boss.subscribe_offer(msisdn, offer_id)`。
-5. 已订购再选同一档 → `offer_already_on`。对不上 → `need_select`，保持 `awaiting_select`。
+5. 已订购再选同一档 → `offer_already_on`。完全对不上 → `need_select`，列表不变。
+
+评测：`o07` 为 `OFFER`+`本地流量` → `narrow_select`；`o08` 再回 `2`+`Y` 订 10G。
 
 不要在选择态把 `1` 交给菜单匹配：`awaiting_select` 必须在 `match_rule` 之前处理。
 

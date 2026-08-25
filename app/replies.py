@@ -142,12 +142,19 @@ def out_of_scope(lang: str) -> str:
     )
 
 
-def offer_list_text(lang: str, items: list[dict[str, Any]]) -> str:
+def offer_list_text(lang: str, items: list[dict[str, Any]], *, narrowed: bool = False) -> str:
     lines = []
     for item in items:
         name = item["zh"] if lang == "zh" else item["en"]
         lines.append(f"{item['index']} {name}")
     body = "\n".join(lines)
+    nums = "、".join(str(i["index"]) for i in items)
+    if narrowed:
+        return t(
+            lang,
+            f"有多项匹配，请再选（编号不变）：\n{body}\n回复{nums}或名称办理，0取消。",
+            f"Several matches, pick again (same numbers):\n{body}\nReply {nums} or a name. 0 to cancel.",
+        )
     return t(
         lang,
         f"可订购资费：\n{body}\n回复编号或名称办理，0取消。",
@@ -156,11 +163,11 @@ def offer_list_text(lang: str, items: list[dict[str, Any]]) -> str:
 
 
 def need_select_text(lang: str, items: list[dict[str, Any]]) -> str:
-    n = len(items)
+    nums = "、".join(str(i["index"]) for i in items) if items else "编号"
     return t(
         lang,
-        f"未识别该选择。请回复 1-{n} 的编号，或资费名称，0取消。",
-        f"Could not match that. Reply 1-{n}, a tariff name, or 0 to cancel.",
+        f"未识别该选择。请回复 {nums} 或资费名称，0取消。",
+        f"Could not match that. Reply {nums} or a tariff name, or 0 to cancel.",
     )
 
 

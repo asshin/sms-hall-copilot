@@ -27,6 +27,12 @@ def test_select_name_and_typo_liucheng():
     assert typo["ok"] and typo["item"]["id"] == "OFF_50G_LOCAL"
     miss = match_select("天气怎么样", items, use_llm=False)
     assert miss["ok"] is False
+    amb = match_select("本地流量", items, use_llm=False)
+    assert amb["ok"] is False and amb["reason"] == "ambiguous"
+    assert [c["index"] for c in amb["candidates"]] == [1, 2]
+    packs = match_select("流量包", items, use_llm=False)
+    assert packs["reason"] == "ambiguous"
+    assert [c["index"] for c in packs["candidates"]] == [4, 7]
 
 
 def test_offer_flow_number_then_confirm():
@@ -72,3 +78,41 @@ def test_offer_select_unknown_stays_in_session():
     assert miss.trace.intent == "need_select"
     assert miss.session_state == "awaiting_select"
     assert miss.trace.tools == []
+
+
+def test_ambiguous_keeps_original_indexes():
+    reset_runtime()
+    store.reset()
+    handle_mo("85259990001", "OFFER")
+    narrowed = handle_mo("85259990001", "本地流量")
+    assert narrowed.trace.intent == "narrow_select"
+    body = "".join(narrowed.replies)
+    assert "1 50G本地流量" in body
+    assert "2 10G本地流量" in body
+    assert "将订购" not in body
+    assert narrowed.session_state == "awaiting_select"
+    picked = handle_mo("85259990001", "2")
+    assert picked.trace.confirm_required is True
+    assert "10G" in "".join(picked.replies)
+    done = handle_mo("85259990001", "Y")
+    assert done.trace.tools == ["subscribe_offer"]
+    assert "10G" in done.replies[0]
+
+
+def test_ambiguous_packs_then_original_index_and_ordinal():
+    reset_runtime()
+    store.reset()
+    handle_mo("85259990001", "OFFER")
+    narrowed = handle_mo("85259990001", "流量包")
+    body = "".join(narrowed.replies)
+    assert "4 周末流量包" in body
+    assert "7 闲时流量包" in body
+    first = handle_mo("85259990001", "第一个")
+    assert first.trace.confirm_required is True
+    assert "周末流量包" in "".join(first.replies)
+    handle_mo("85259990001", "N")
+    handle_mo("85259990001", "OFFER")
+    handle_mo("85259990001", "流量包")
+    named = handle_mo("85259990001", "闲时流量包")
+    assert "闲时流量包" in "".join(named.replies)
+    assert named.trace.confirm_required is True

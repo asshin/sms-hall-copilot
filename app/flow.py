@@ -49,6 +49,13 @@ def handle_offer_select(user: dict[str, Any], text: str, started: float) -> Turn
         return _finish(msisdn, replies.cancelled(lang), Trace(route="rule", intent="cancel"), started)
 
     hit = match_select(text, items)
+    cands = [c for c in (hit.get("candidates") or []) if c]
+    if hit.get("reason") == "ambiguous" and len(cands) >= 2:
+        sess.select_list = cands
+        sess.state = "awaiting_select"
+        sess.touch()
+        trace = Trace(route="heuristic", intent="narrow_select", fallback_reason="ambiguous")
+        return _finish(msisdn, replies.offer_list_text(lang, cands, narrowed=True), trace, started)
     if not hit.get("ok"):
         trace = Trace(route="rule", intent="need_select", fallback_reason=hit.get("reason"))
         return _finish(msisdn, replies.need_select_text(lang, items), trace, started)
