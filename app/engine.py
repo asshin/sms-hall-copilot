@@ -108,7 +108,7 @@ def _dispatch(
         )
         return _finish(msisdn, replies.forbid_text(lang, reason), trace, started, usage)
 
-    if requires_confirm(plan.intent) and not confirmed:
+    if (plan.confirm or requires_confirm(plan.intent)) and not confirmed:
         sess.state = "awaiting_confirm"
         sess.pending_intent = plan.intent
         sess.pending_slots = dict(plan.slots)
@@ -122,7 +122,7 @@ def _dispatch(
         )
         return _finish(msisdn, replies.confirm_text(lang, plan.intent, plan.slots), trace, started, usage)
 
-    if plan.intent not in tools.INTENT_TOOL:
+    if not tools.has_tool(plan.intent):
         trace = Trace(route=plan.source, intent=plan.intent, fallback_reason=fallback)
         return _finish(msisdn, replies.out_of_scope(lang), trace, started, usage)
 

@@ -82,7 +82,16 @@
     }
     input { flex: 1; }
     button.act { background: var(--accent); color: #1a1208; border: 0; cursor: pointer; font-weight: 600; }
+    button.act:disabled { opacity: 0.4; cursor: not-allowed; }
     button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); cursor: pointer; padding: 8px; }
+    .review {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid var(--accent);
+      background: #18150f;
+    }
+    .review h3 { margin: 0 0 8px; font-size: 14px; color: var(--accent); }
+    .review p { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
     .side { display: flex; flex-direction: column; gap: 12px; }
     .card { background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; }
     .card h2 { margin: 0 0 8px; font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
@@ -92,8 +101,20 @@
     .ok { color: var(--ok); }
     .bad { color: var(--danger); }
     textarea { width: 100%; min-height: 90px; resize: vertical; }
+    textarea.schema { min-height: 72px; font-family: Consolas, "Courier New", monospace; font-size: 12px; }
+    label.field { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; }
+    .subtabs { display: flex; gap: 6px; margin-bottom: 10px; }
+    .subtabs button {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      padding: 4px 10px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .subtabs button.on { color: var(--text); border-color: var(--accent); }
     pre { margin: 0; white-space: pre-wrap; color: var(--muted); font-size: 12px; }
-    .hidden { display: none; }
+    .hidden { display: none !important; }
     .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   </style>
 </head>
@@ -140,13 +161,49 @@
 
   <section id="tab-cfg" class="layout hidden">
     <div class="card">
-      <h2>需求</h2>
-      <textarea id="req">预付费用户发送 STOP 暂停本地和漫游数据，需要 Y 确认。对接 CRM 暂停接口。</textarea>
+      <h2>配置助手</h2>
+      <div class="subtabs">
+        <button class="on" data-mode="cmd">指令草案</button>
+        <button data-mode="intent">新增意图</button>
+      </div>
+      <div id="mode-cmd">
+        <label class="field">需求（映射到已有意图）</label>
+        <textarea id="req">预付费用户发送 STOP 暂停本地和漫游数据，需要 Y 确认。对接 CRM 暂停接口。</textarea>
+      </div>
+      <div id="mode-intent" class="hidden">
+        <label class="field">接口描述</label>
+        <textarea id="apiDesc">查询用户游戏积分，预付费和后付费均可，无需确认。指令码 GPNT。</textarea>
+        <label class="field">入参格式（JSON 或 name: type）</label>
+        <textarea id="apiIn" class="schema">{
+  "msisdn": "string",
+  "game_id": "G001"
+}</textarea>
+        <label class="field">出参格式（JSON 或 name: type）</label>
+        <textarea id="apiOut" class="schema">{
+  "ok": true,
+  "points": 1200,
+  "game_id": "G001"
+}</textarea>
+        <label class="field">建议指令码（可选）</label>
+        <input id="apiCode" value="GPNT" style="width:100%;margin-top:6px" />
+      </div>
       <div class="row" style="margin-top:8px">
         <button class="act" id="draftBtn">生成草案</button>
         <span id="verdictPill" class="pill">未跑</span>
       </div>
-      <p style="color:var(--muted);margin:10px 0 0;font-size:12px">Harness：检索 → 提案 → 冲突改派 → 策略检查 → 结论。不会写入 catalog。</p>
+      <div class="review" id="reviewBox">
+        <h3>人工审核</h3>
+        <p id="reviewHint">先生成草案，核对意图名、指令码、出入参和短信模板。通过后勾选并写入配置，短厅立刻可测。</p>
+        <label id="ackRow" style="display:flex;gap:8px;align-items:flex-start;color:var(--text);font-size:13px">
+          <input id="ackUnknowns" type="checkbox" />
+          <span>我已人工核对草案（含意图、出入参 Mock、冲突改派和短信模板），同意写入配置</span>
+        </label>
+        <div class="row" style="margin-top:10px">
+          <button class="act" id="applyBtn" disabled>审核通过，写入配置</button>
+          <span id="applyOut" class="pill">待审核</span>
+        </div>
+      </div>
+      <p id="flowHint" style="color:var(--muted);margin:10px 0 0;font-size:12px">指令草案：检索 → 已有意图 → 冲突改派 → 人审写入 catalog。blocked 不能写入。</p>
     </div>
     <div class="side">
       <div class="card">
@@ -171,6 +228,8 @@
   <script>
     const $ = (id) => document.getElementById(id);
     let meta = null;
+    let lastConfig = null;
+    let cfgMode = "cmd";
 
     async function boot() {
       meta = await (await fetch("/api/meta")).json();
@@ -238,34 +297,115 @@
       $("evalOut").textContent = `${m.passed}/${m.total}  ${Math.round(m.accuracy * 100)}%`;
       $("evalOut").className = "pill " + (m.accuracy >= 0.9 ? "ok" : "bad");
     };
+    function syncApplyUi() {
+      const v = lastConfig && lastConfig.verdict;
+      const blocked = !lastConfig || v === "blocked";
+      const already = v === "already_configured";
+      const ready = !blocked && !already && lastConfig.can_apply && $("ackUnknowns").checked;
+      $("ackUnknowns").disabled = blocked || already;
+      $("applyBtn").disabled = !ready;
+      if (!lastConfig) $("applyOut").textContent = "待审核";
+      else if (already) $("applyOut").textContent = "已生效";
+      else if (blocked) $("applyOut").textContent = "不可写入";
+      else $("applyOut").textContent = ready ? "可写入" : "请先勾选确认";
+    }
+
+    $("ackUnknowns").onchange = syncApplyUi;
+
     $("draftBtn").onclick = async () => {
       $("verdictPill").textContent = "running…";
-      const data = await (await fetch("/api/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requirement: $("req").value }),
-      })).json();
-      const v = data.verdict || "—";
+      $("applyBtn").disabled = true;
+      if (cfgMode === "intent") {
+        lastConfig = await (await fetch("/api/config/intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description: $("apiDesc").value,
+            request_schema: $("apiIn").value,
+            response_schema: $("apiOut").value,
+            command_code: $("apiCode").value,
+          }),
+        })).json();
+      } else {
+        lastConfig = await (await fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requirement: $("req").value }),
+        })).json();
+      }
+      const v = lastConfig.verdict || "—";
       $("verdictPill").textContent = v;
-      $("verdictPill").className = "pill " + (v === "ready_to_copy" ? "ok" : "bad");
-      const d = data.draft || {};
+      $("verdictPill").className = "pill " + (v === "ready_to_copy" || v === "already_configured" ? "ok" : "bad");
+      const d = lastConfig.draft || {};
+      const api = d.api || {};
       const rows = [
+        ["kind", lastConfig.kind || "command"],
         ["verdict", v],
-        ["reason", data.verdict_reason || "—"],
-        ["apply", String(data.apply)],
-        ["source", data.propose_source || "—"],
+        ["reason", lastConfig.verdict_reason || "—"],
+        ["can_apply", String(lastConfig.can_apply)],
+        ["source", lastConfig.propose_source || "—"],
         ["intent", d.intent || "—"],
+        ["intent_kind", d.intent_kind || "—"],
         ["requested", d.requested_code || "—"],
         ["assigned", d.command_code || "—"],
         ["confirm", String(d.confirm)],
         ["plans", (d.plans || []).join(",") || "—"],
-        ["unknowns", (data.unknowns || []).join(", ") || "—"],
+        ["api", api.name || "—"],
+        ["request", api.request ? Object.keys(api.request).join(", ") : "—"],
+        ["response", api.response ? Object.keys(api.response).join(", ") : "—"],
+        ["sms_zh", d.success_sms_zh || "—"],
+        ["unknowns", (lastConfig.unknowns || []).join(", ") || "—"],
       ];
       $("cfgKv").innerHTML = rows.map(([k, val]) => `<span>${k}</span><div>${val}</div>`).join("");
-      $("cfgChecks").textContent = (data.checks || []).map(c => `${c.ok ? "PASS" : "FAIL"}  ${c.id}  ${c.detail}`).join("\n");
-      $("cfgSteps").textContent = (data.steps || []).map(s => `${s.id}  ok=${s.ok}  ${JSON.stringify(s)}`).join("\n");
-      $("draftOut").textContent = JSON.stringify(data, null, 2);
+      $("cfgChecks").textContent = (lastConfig.checks || []).map(c => `${c.ok ? "PASS" : "FAIL"}  ${c.id}  ${c.detail}`).join("\n");
+      $("cfgSteps").textContent = (lastConfig.steps || []).map(s => `${s.id}  ok=${s.ok}  ${JSON.stringify(s)}`).join("\n");
+      $("draftOut").textContent = JSON.stringify(lastConfig, null, 2);
+      $("ackUnknowns").checked = false;
+      $("applyOut").className = "pill";
+      $("reviewHint").textContent = v === "blocked"
+        ? "策略未通过，不能写入。新业务请改用「新增意图」填写接口描述和出入参。"
+        : (v === "already_configured"
+          ? ((d.already_configured && d.already_configured.message) || "该指令已配置，请到用户短厅测试。")
+          : `结论 ${v}。请核对 intent / 指令码，勾选后写入配置。`);
+      syncApplyUi();
     };
+
+    $("applyBtn").onclick = async () => {
+      if (!lastConfig) return;
+      $("applyBtn").disabled = true;
+      const res = await (await fetch("/api/config/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          verdict: lastConfig.verdict,
+          draft: lastConfig.draft,
+          unknowns: lastConfig.unknowns || [],
+          acknowledged: $("ackUnknowns").checked,
+        }),
+      })).json();
+      $("applyOut").textContent = res.ok ? "已写入" : (res.error || "失败");
+      $("applyOut").className = "pill " + (res.ok ? "ok" : "bad");
+      if (res.message) $("cfgChecks").textContent = res.message + "\n\n" + $("cfgChecks").textContent;
+      if (!res.ok) syncApplyUi();
+    };
+    document.querySelectorAll(".subtabs button").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll(".subtabs button").forEach((b) => b.classList.remove("on"));
+        btn.classList.add("on");
+        cfgMode = btn.dataset.mode;
+        $("mode-cmd").classList.toggle("hidden", cfgMode !== "cmd");
+        $("mode-intent").classList.toggle("hidden", cfgMode !== "intent");
+        lastConfig = null;
+        $("ackUnknowns").checked = false;
+        $("verdictPill").textContent = "未跑";
+        $("verdictPill").className = "pill";
+        $("applyOut").textContent = "待审核";
+        $("flowHint").textContent = cfgMode === "intent"
+          ? "新增意图：接口描述 + 出入参 → 生成意图/Mock/短信模板 → 人审写入 intents.json 与 catalog。"
+          : "指令草案：检索 → 已有意图 → 冲突改派 → 人审写入 catalog。blocked 不能写入。";
+        syncApplyUi();
+      };
+    });
     document.querySelectorAll(".tabs button").forEach((btn) => {
       btn.onclick = () => {
         document.querySelectorAll(".tabs button").forEach((b) => b.classList.remove("on"));

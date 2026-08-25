@@ -26,12 +26,22 @@ Rules:
 
 def classify(text: str, user: dict[str, Any]) -> IntentPlan:
     hits = search(text)
+    from app.intents_registry import list_intents
+
+    extra = [s["id"] for s in list_intents() if s.get("id")]
+    system = SYSTEM
+    if extra:
+        system += (
+            "\nCustom intents (only if SMS clearly matches): "
+            + ", ".join(extra)
+            + "."
+        )
     payload = {
         "model": settings.llm_model,
         "temperature": 0,
         "max_tokens": settings.llm_max_tokens,
         "messages": [
-            {"role": "system", "content": SYSTEM},
+            {"role": "system", "content": system},
             {
                 "role": "user",
                 "content": json.dumps(

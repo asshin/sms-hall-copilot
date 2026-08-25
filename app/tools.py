@@ -151,7 +151,33 @@ INTENT_TOOL = {
 }
 
 
+def has_tool(intent: str) -> bool:
+    if intent in INTENT_TOOL:
+        return True
+    from app.intents_registry import get_intent
+
+    return get_intent(intent) is not None
+
+
+def run_registered(spec: dict[str, Any], msisdn: str, slots: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Execute a config-time API contract via Mock. Never calls a live URL."""
+    payload = dict(spec.get("mock_result") or {"ok": True})
+    payload.setdefault("ok", True)
+    payload["msisdn"] = msisdn
+    for key, val in (slots or {}).items():
+        payload.setdefault(key, val)
+    return payload
+
+
 def run_tool(intent: str, msisdn: str, slots: dict[str, Any] | None = None) -> tuple[str, dict[str, Any]]:
-    name = INTENT_TOOL[intent]
-    result = TOOL_MAP[name](msisdn, **(slots or {}))
-    return name, result
+    if intent in INTENT_TOOL:
+        name = INTENT_TOOL[intent]
+        result = TOOL_MAP[name](msisdn, **(slots or {}))
+        return name, result
+    from app.intents_registry import get_intent
+
+    spec = get_intent(intent)
+    if not spec:
+        raise KeyError(intent)
+    api_name = str((spec.get("api") or {}).get("name") or spec["id"])
+    return api_name, run_registered(spec, msisdn, slots)

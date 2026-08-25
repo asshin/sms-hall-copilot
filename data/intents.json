@@ -1,0 +1,47 @@
+{
+  "intents": [
+    {
+      "id": "query_game_points",
+      "kind": "query",
+      "description": "查询用户游戏积分，预付费和后付费均可，无需确认。指令码 GPNT。",
+      "confirm": false,
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ],
+      "keywords": [
+        "游戏积分",
+        "查询用户游戏积分",
+        "预付费和后付费均",
+        "指令码",
+        "gpnt"
+      ],
+      "default_slots": {
+        "game_id": "G001"
+      },
+      "api": {
+        "name": "QueryGamePoints",
+        "mock": true,
+        "request": {
+          "msisdn": "string",
+          "game_id": "G001"
+        },
+        "response": {
+          "ok": true,
+          "points": 1200,
+          "game_id": "G001"
+        }
+      },
+      "mock_result": {
+        "ok": true,
+        "points": 1200,
+        "game_id": "G001"
+      },
+      "success_sms_zh": "游戏积分 {points}。",
+      "success_sms_en": "Game points {points}.",
+      "fail_sms_zh": "办理失败，请稍后重试。",
+      "fail_sms_en": "Failed. Please try later.",
+      "command_code": "GPNT"
+    }
+  ]
+}

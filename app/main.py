@@ -7,7 +7,8 @@ from pydantic import BaseModel
 
 from app.catalog import load_catalog, load_users
 from app.config import STATIC_DIR
-from app.config_assist import draft_config
+from app.config_assist import apply_approved_draft, draft_config
+from app.intent_assist import draft_intent_from_api
 from app.engine import handle_mo
 from app.eval_runner import run_eval
 from app.session import store
@@ -24,6 +25,20 @@ class SmsIn(BaseModel):
 
 class ConfigIn(BaseModel):
     requirement: str
+
+
+class ConfigApplyIn(BaseModel):
+    verdict: str
+    draft: dict
+    unknowns: list[str] = []
+    acknowledged: bool = False
+
+
+class IntentIn(BaseModel):
+    description: str
+    request_schema: str
+    response_schema: str
+    command_code: str = ""
 
 
 @app.get("/")
@@ -56,6 +71,21 @@ def eval_api() -> dict:
 @app.post("/api/config")
 def config_api(body: ConfigIn) -> dict:
     return draft_config(body.requirement)
+
+
+@app.post("/api/config/intent")
+def config_intent(body: IntentIn) -> dict:
+    return draft_intent_from_api(
+        body.description,
+        body.request_schema,
+        body.response_schema,
+        body.command_code,
+    )
+
+
+@app.post("/api/config/apply")
+def config_apply(body: ConfigApplyIn) -> dict:
+    return apply_approved_draft(body.model_dump(), acknowledged=body.acknowledged)
 
 
 @app.get("/api/meta")

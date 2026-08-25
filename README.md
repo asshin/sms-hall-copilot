@@ -7,7 +7,7 @@
 ## 两个能力
 
 1. **用户短厅助手**：上行短信 → 规则匹配 / 意图识别 → 会话确认 → Mock BSS → 合规短信。
-2. **配置助手**：自然语言需求 → 隐性指令/菜单草案 → 指令冲突与漏确认检查。
+2. **配置助手**：自然语言需求 → 隐性指令草案；或接口描述 + 出入参 → 生成新意图（Mock 执行）→ 人工确认写入。
 
 对应现网链路的讲法见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，面试稿见 [docs/INTERVIEW.md](docs/INTERVIEW.md)。学习计划见 [PLAN.md](PLAN.md)。
 

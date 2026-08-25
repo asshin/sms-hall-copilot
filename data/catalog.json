@@ -44,157 +44,254 @@
       "intent": "query_balance",
       "hidden": true,
       "confirm": false,
-      "plans": ["prepaid", "postpaid"]
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ]
     },
     {
       "code": "DATA",
       "intent": "query_data",
       "hidden": true,
       "confirm": false,
-      "plans": ["prepaid", "postpaid"]
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ]
     },
     {
       "code": "BILL",
       "intent": "query_bill",
       "hidden": true,
       "confirm": false,
-      "plans": ["postpaid"]
+      "plans": [
+        "postpaid"
+      ]
     },
     {
       "code": "PLAN",
       "intent": "query_plan",
       "hidden": true,
       "confirm": false,
-      "plans": ["prepaid", "postpaid"]
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ]
     },
     {
       "code": "STOP",
       "intent": "pause_data",
       "hidden": true,
       "confirm": true,
-      "plans": ["prepaid"]
+      "plans": [
+        "prepaid"
+      ]
     },
     {
       "code": "PAUSE",
       "intent": "pause_data",
       "hidden": true,
       "confirm": true,
-      "plans": ["prepaid"]
+      "plans": [
+        "prepaid"
+      ]
     },
     {
       "code": "RESUME",
       "intent": "resume_data",
       "hidden": true,
       "confirm": true,
-      "plans": ["prepaid"]
+      "plans": [
+        "prepaid"
+      ]
     },
     {
       "code": "CID",
       "intent": "subscribe_vas",
       "hidden": true,
       "confirm": true,
-      "plans": ["prepaid", "postpaid"],
-      "slots": { "vas_code": "caller_id" }
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ],
+      "slots": {
+        "vas_code": "caller_id"
+      }
     },
     {
       "code": "CIDOFF",
       "intent": "unsubscribe_vas",
       "hidden": true,
       "confirm": true,
-      "plans": ["prepaid", "postpaid"],
-      "slots": { "vas_code": "caller_id" }
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ],
+      "slots": {
+        "vas_code": "caller_id"
+      }
     },
     {
       "code": "11",
       "intent": "query_balance",
       "hidden": false,
       "confirm": false,
-      "plans": ["prepaid", "postpaid"]
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ]
     },
     {
       "code": "12",
       "intent": "query_data",
       "hidden": false,
       "confirm": false,
-      "plans": ["prepaid", "postpaid"]
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ]
     },
     {
       "code": "13",
       "intent": "query_bill",
       "hidden": false,
       "confirm": false,
-      "plans": ["postpaid"]
+      "plans": [
+        "postpaid"
+      ]
     },
     {
       "code": "21",
       "intent": "query_plan",
       "hidden": false,
       "confirm": false,
-      "plans": ["prepaid", "postpaid"]
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ]
     },
     {
       "code": "31",
       "intent": "subscribe_vas",
       "hidden": false,
       "confirm": true,
-      "plans": ["prepaid", "postpaid"],
-      "slots": { "vas_code": "caller_id" }
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ],
+      "slots": {
+        "vas_code": "caller_id"
+      }
     },
     {
       "code": "32",
       "intent": "subscribe_vas",
       "hidden": false,
       "confirm": true,
-      "plans": ["prepaid", "postpaid"],
-      "slots": { "vas_code": "call_waiting" }
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ],
+      "slots": {
+        "vas_code": "call_waiting"
+      }
     },
     {
       "code": "41",
       "intent": "pause_data",
       "hidden": false,
       "confirm": true,
-      "plans": ["prepaid"]
+      "plans": [
+        "prepaid"
+      ]
     },
     {
       "code": "42",
       "intent": "resume_data",
       "hidden": false,
       "confirm": true,
-      "plans": ["prepaid"]
+      "plans": [
+        "prepaid"
+      ]
     },
     {
       "code": "43",
       "intent": "set_language",
       "hidden": false,
       "confirm": false,
-      "plans": ["prepaid", "postpaid"]
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ]
     },
     {
       "code": "EN",
       "intent": "set_language",
       "hidden": true,
       "confirm": false,
-      "plans": ["prepaid", "postpaid"],
-      "slots": { "lang": "en" }
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ],
+      "slots": {
+        "lang": "en"
+      }
     },
     {
       "code": "ZH",
       "intent": "set_language",
       "hidden": true,
       "confirm": false,
-      "plans": ["prepaid", "postpaid"],
-      "slots": { "lang": "zh" }
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ],
+      "slots": {
+        "lang": "zh"
+      }
     },
     {
       "code": "CARD",
       "intent": "voucher_topup",
       "hidden": true,
       "confirm": false,
-      "plans": ["prepaid"]
+      "plans": [
+        "prepaid"
+      ]
+    },
+    {
+      "code": "STOP3",
+      "intent": "pause_data",
+      "hidden": true,
+      "confirm": true,
+      "plans": [
+        "prepaid"
+      ]
+    },
+    {
+      "code": "GPNT",
+      "intent": "query_game_points",
+      "hidden": true,
+      "confirm": false,
+      "plans": [
+        "prepaid",
+        "postpaid"
+      ],
+      "slots": {
+        "game_id": "G001"
+      }
     }
   ],
   "vas": {
-    "caller_id": { "zh": "来电显示", "en": "Caller ID", "monthly_fee": 8 },
-    "call_waiting": { "zh": "呼叫等待", "en": "Call waiting", "monthly_fee": 5 }
+    "caller_id": {
+      "zh": "来电显示",
+      "en": "Caller ID",
+      "monthly_fee": 8
+    },
+    "call_waiting": {
+      "zh": "呼叫等待",
+      "en": "Call waiting",
+      "monthly_fee": 5
+    }
   }
 }

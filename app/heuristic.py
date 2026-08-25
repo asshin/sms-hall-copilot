@@ -48,4 +48,16 @@ def plan(text: str) -> IntentPlan:
                 source="heuristic",
                 confidence=0.72,
             )
+    from app.intents_registry import list_intents
+
+    for spec in list_intents():
+        for kw in spec.get("keywords") or []:
+            if kw and (str(kw).lower() in low or str(kw) in text):
+                return IntentPlan(
+                    intent=spec["id"],
+                    slots=dict(spec.get("default_slots") or {}),
+                    confirm=bool(spec.get("confirm")),
+                    source="heuristic",
+                    confidence=0.7,
+                )
     return IntentPlan(intent="out_of_scope", source="heuristic", confidence=0.4)

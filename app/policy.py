@@ -16,10 +16,23 @@ PLAN_ONLY = {
 def requires_confirm(intent: str, command: dict[str, Any] | None = None) -> bool:
     if command and command.get("confirm"):
         return True
+    from app.intents_registry import get_intent
+
+    spec = get_intent(intent)
+    if spec is not None:
+        return bool(spec.get("confirm"))
     return intent in SENSITIVE
 
 
 def forbid_reason(intent: str, user: dict[str, Any]) -> str | None:
+    from app.intents_registry import get_intent
+
+    spec = get_intent(intent)
+    if spec is not None:
+        allowed = set(spec.get("plans") or [])
+        if allowed and user.get("plan") not in allowed:
+            return "plan_mismatch"
+        return None
     allowed = PLAN_ONLY.get(intent)
     if allowed and user.get("plan") not in allowed:
         if intent == "query_bill":

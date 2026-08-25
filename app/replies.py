@@ -32,7 +32,21 @@ def forbid_text(lang: str, reason: str) -> str:
     return t(lang, zh, en)
 
 
+def _safe_format(template: str, data: dict[str, Any]) -> str:
+    class _D(dict):
+        def __missing__(self, key: str) -> str:
+            return ""
+
+    return str(template).format_map(_D({str(k): v for k, v in data.items()}))
+
+
 def confirm_text(lang: str, intent: str, slots: dict[str, Any]) -> str:
+    from app.intents_registry import get_intent
+
+    spec = get_intent(intent)
+    if spec:
+        label = (spec.get("description") or spec.get("id") or "该业务")[:18]
+        return t(lang, f"将办理{label}，回复 Y 确认，N 取消。", f"Proceed with {label}. Reply Y to confirm, N to cancel.")
     if intent == "pause_data":
         return t(lang, "将暂停本地及漫游数据，回复 Y 确认，N 取消。", "Pause local & roaming data. Reply Y to confirm, N to cancel.")
     if intent == "resume_data":
@@ -85,6 +99,14 @@ def result_text(lang: str, intent: str, payload: dict[str, Any], slots: dict[str
             f"充值卡已入账 {payload['amount']} {payload['currency']}，余额 {payload['balance']}。",
             f"Voucher {payload['amount']} {payload['currency']} added. Balance {payload['balance']}.",
         )
+    from app.intents_registry import get_intent
+
+    spec = get_intent(intent)
+    if spec:
+        if not payload.get("ok"):
+            return t(lang, spec.get("fail_sms_zh") or "办理失败，请稍后重试。", spec.get("fail_sms_en") or "Failed. Please try later.")
+        tmpl = spec.get("success_sms_zh") if lang == "zh" else spec.get("success_sms_en")
+        return _safe_format(tmpl or ("办理完成。" if lang == "zh" else "Done."), {**slots, **payload})
     return t(lang, "办理完成。", "Done.")
 
 
